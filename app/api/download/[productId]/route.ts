@@ -3,20 +3,23 @@ import { adminDb } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/security/auth-guard";
 import { fetchTelegramFileStream } from "@/lib/telegram/client";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   req: Request,
   { params }: { params: { productId: string } }
 ) {
   try {
-    // 1. Verifikasi Autentikasi User via ID Token
     const user = await verifyAuthToken(req);
     const { productId } = params;
 
     if (!productId) {
-      return NextResponse.json({ error: "Product ID diperlukan." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Product ID diperlukan." },
+        { status: 400 }
+      );
     }
 
-    // 2. Otorisasi Pembelian: Cek apakah user telah membeli produk ini dengan status PAID
     const ordersSnap = await adminDb
       .collection("orders")
       .where("userId", "==", user.uid)
@@ -27,17 +30,22 @@ export async function GET(
 
     if (ordersSnap.empty) {
       return NextResponse.json(
-        { error: "FORBIDDEN: Anda belum membeli produk ini atau pembayaran belum terverifikasi." },
+        {
+          error:
+            "FORBIDDEN: Anda belum membeli produk ini atau pembayaran belum terverifikasi.",
+        },
         { status: 403 }
       );
     }
 
     const orderDoc = ordersSnap.docs[0];
-
-    // 3. Ambil data produk & Telegram File ID dari Firestore
     const productDoc = await adminDb.collection("products").doc(productId).get();
+
     if (!productDoc.exists) {
-      return NextResponse.json({ error: "Produk tidak ditemukan." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Produk tidak ditemukan." },
+        { status: 404 }
+      );
     }
 
     const productData = productDoc.data();
@@ -48,7 +56,6 @@ export async function GET(
       );
     }
 
-    // 4. Catat Log Aktivitas Download ke Firestore
     const clientIp = req.headers.get("x-forwarded-for") || "0.0.0.0";
     const userAgent = req.headers.get("user-agent") || "unknown";
 
@@ -61,17 +68,22 @@ export async function GET(
       userAgent,
     });
 
-    // 5. Stream File dari Telegram ke Client (Proxy)
-    const telegramResponse = await fetchTelegramFileStream(productData.telegramFileId);
-    
+    const telegramResponse = await fetchTelegramFileStream(
+      productData.telegramFileId
+    );
+
     const headers = new Headers();
     headers.set(
       "Content-Type",
-      telegramResponse.headers.get("content-type") || "application/octet-stream"
+      telegramResponse.headers.get("content-type") ||
+        "application/octet-stream"
     );
     headers.set(
       "Content-Disposition",
-      `attachment; filename="${productData.name.replace(/[^a-zA-Z0-9]/g, "_")}.zip"`
+      `attachment; filename="${productData.name.replace(
+        /[^a-zA-Z0-9]/g,
+        "_"
+      )}.zip"`
     );
 
     return new NextResponse(telegramResponse.body, {
