@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
-import { initializeApp, getApps, FirebaseApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
@@ -10,7 +8,12 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,6 +21,10 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
+      // Import Firebase secara dinamis di sisi Client agar Vercel tidak crash saat Build
+      const { initializeApp, getApps } = await import("firebase/app");
+      const { getAuth, signInWithEmailAndPassword } = await import("firebase/auth");
+
       const firebaseConfig = {
         apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
         authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -27,14 +34,9 @@ export default function AdminLoginPage() {
         appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
       };
 
-      let app: FirebaseApp;
-      if (!getApps().length) {
-        app = initializeApp(firebaseConfig);
-      } else {
-        app = getApps()[0];
-      }
-
+      const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
       const auth = getAuth(app);
+      
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const token = await userCredential.user.getIdToken();
 
@@ -44,12 +46,14 @@ export default function AdminLoginPage() {
       if (err instanceof Error) {
         setError("Login gagal: " + err.message);
       } else {
-        setError("Login gagal: Terjadi kesalahan sistem.");
+        setError("Login gagal: Terjadi kesalahan.");
       }
     } finally {
       setLoading(false);
     }
   };
+
+  if (!isClient) return null;
 
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", fontFamily: "sans-serif", backgroundColor: "#f4f6f8" }}>
