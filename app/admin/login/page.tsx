@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { initializeApp, getApps } from "firebase/app";
+import { useState, FormEvent } from "react";
+import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
@@ -12,7 +12,7 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -27,18 +27,25 @@ export default function AdminLoginPage() {
         appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
       };
 
+      let app: FirebaseApp;
       if (!getApps().length) {
-        initializeApp(firebaseConfig);
+        app = initializeApp(firebaseConfig);
+      } else {
+        app = getApps()[0];
       }
 
-      const auth = getAuth();
+      const auth = getAuth(app);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const token = await userCredential.user.getIdToken();
 
       localStorage.setItem("admin_token", token);
       router.push("/admin");
-    } catch (err: any) {
-      setError("Login gagal: " + err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError("Login gagal: " + err.message);
+      } else {
+        setError("Login gagal: Terjadi kesalahan sistem.");
+      }
     } finally {
       setLoading(false);
     }
