@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/security/auth-guard";
 import { createDokuInvoice } from "@/lib/doku/client";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +17,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Product ID wajib diisi." }, { status: 400 });
     }
 
+    const adminDb = getAdminDb();
     const productDoc = await adminDb.collection("products").doc(productId).get();
 
     if (!productDoc.exists) {
