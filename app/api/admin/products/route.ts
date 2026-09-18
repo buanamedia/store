@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/security/auth-guard";
 import { Product } from "@/types/product";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   try {
@@ -15,6 +16,7 @@ export async function GET(req: Request) {
       );
     }
 
+    const adminDb = getAdminDb();
     const snapshot = await adminDb
       .collection("products")
       .orderBy("createdAt", "desc")
@@ -63,6 +65,7 @@ export async function POST(req: Request) {
       );
     }
 
+    const adminDb = getAdminDb();
     const productRef = adminDb.collection("products").doc(id);
     const docSnap = await productRef.get();
 
