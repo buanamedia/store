@@ -1,19 +1,14 @@
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
+import { useState, FormEvent, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 
-export default function AdminLoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -21,7 +16,6 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
-      // Import Firebase secara dinamis di sisi Client agar Vercel tidak crash saat Build
       const { initializeApp, getApps } = await import("firebase/app");
       const { getAuth, signInWithEmailAndPassword } = await import("firebase/auth");
 
@@ -52,8 +46,6 @@ export default function AdminLoginPage() {
       setLoading(false);
     }
   };
-
-  if (!isClient) return null;
 
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", fontFamily: "sans-serif", backgroundColor: "#f4f6f8" }}>
@@ -89,5 +81,13 @@ export default function AdminLoginPage() {
         </button>
       </form>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "20px", textAlign: "center" }}>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
