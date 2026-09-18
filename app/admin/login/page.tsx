@@ -5,9 +5,6 @@ import { initializeApp, getApps } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
-// Pastikan Next.js merender rute ini secara dinamis
-export const dynamic = "force-dynamic";
-
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
