@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/security/auth-guard";
 import { fetchTelegramFileStream } from "@/lib/telegram/client";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   req: Request,
@@ -19,6 +20,8 @@ export async function GET(
         { status: 400 }
       );
     }
+
+    const adminDb = getAdminDb();
 
     const ordersSnap = await adminDb
       .collection("orders")
