@@ -1,77 +1,72 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
+import { verifyAuthToken } from "@/lib/security/auth-guard";
 
-// GET /api/products/[productId] - Endpoint publik untuk Blogspot Widget
-export async function GET(
+export const dynamic = "force-dynamic";
+
+export async function PUT(
   req: Request,
   { params }: { params: { productId: string } }
 ) {
   try {
-    const { productId } = params;
-
-    if (!productId) {
+    const user = await verifyAuthToken(req);
+    if (!user.isAdmin) {
       return NextResponse.json(
-        { error: "Product ID diperlukan." },
-        { status: 400 }
+        { error: "FORBIDDEN: Akses khusus Admin." },
+        { status: 403 }
       );
     }
 
-    // Ambil data produk langsung dari Firestore Admin DB
-    const productDoc = await adminDb.collection("products").doc(productId).get();
+    const { productId } = params;
+    const body = await req.json();
 
-    if (!productDoc.exists) {
+    const productRef = adminDb.collection("products").doc(productId);
+    const docSnap = await productRef.get();
+
+    if (!docSnap.exists) {
       return NextResponse.json(
         { error: "Produk tidak ditemukan." },
         { status: 404 }
       );
     }
 
-    const data = productDoc.data();
+    const updateData = {
+      ...body,
+      updatedAt: new Date().toISOString(),
+    };
 
-    // Pastikan produk hanya bisa diakses jika statusnya ACTIVE
-    if (data?.status !== "active") {
+    await productRef.update(updateData);
+
+    return NextResponse.json({
+      success: true,
+      message: "Produk berhasil diperbarui.",
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: { productId: string } }
+) {
+  try {
+    const user = await verifyAuthToken(req);
+    if (!user.isAdmin) {
       return NextResponse.json(
-        { error: "Produk tidak aktif atau tidak tersedia." },
+        { error: "FORBIDDEN: Akses khusus Admin." },
         { status: 403 }
       );
     }
 
-    // SANITASI DATA: Jangan pernah mengekspos telegramFileId / appUrl internal ke publik!
-    const publicProductData = {
-      id: productDoc.id,
-      name: data.name,
-      price: Number(data.price),
-      type: data.type, // 'online' | 'download'
-      description: data.description || "",
-      version: data.version || "1.0",
-      imageUrl: data.imageUrl || "",
-      durationDays: data.type === "online" ? data.durationDays : undefined,
-    };
+    const { productId } = params;
+    await adminDb.collection("products").doc(productId).delete();
 
-    return NextResponse.json(publicProductData, {
-      status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*", // Mengizinkan request dari Blogspot
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
+    return NextResponse.json({
+      success: true,
+      message: "Produk berhasil dihapus.",
     });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: "Gagal mengambil data produk.", details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
-
-// Handshake OPTIONS untuk CORS preflight request dari domain Blogspot
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
 }
