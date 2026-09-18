@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/request";
+import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
@@ -10,7 +10,6 @@ export function middleware(req: NextRequest) {
     const authHeader = req.headers.get("authorization");
     const adminSessionCookie = req.cookies.get("store_admin_session");
 
-    // Jika tidak ada header auth atau cookie session admin, redirect ke login admin
     if (!authHeader && !adminSessionCookie) {
       url.pathname = "/admin/login";
       return NextResponse.redirect(url);
