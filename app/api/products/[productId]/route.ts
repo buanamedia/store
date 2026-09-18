@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   req: Request,
@@ -17,6 +18,7 @@ export async function GET(
       );
     }
 
+    const adminDb = getAdminDb();
     const productDoc = await adminDb.collection("products").doc(productId).get();
 
     if (!productDoc.exists) {
