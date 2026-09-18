@@ -12,7 +12,7 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.role == 'admin';
+      return isAuthenticated() && (request.auth.token.role == 'admin' || request.auth.token.admin == true);
     }
 
     // COLLECTION: USERS
@@ -33,7 +33,6 @@ service cloud.firestore {
     // COLLECTION: ORDERS
     match /orders/{orderId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      // Pembuatan order hanya melalui Backend Vercel API
       allow write: if isAdmin();
     }
 
