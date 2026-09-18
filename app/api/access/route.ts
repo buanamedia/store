@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/security/auth-guard";
 
-// 1. Memaksa API menjadi Serverless Dynamic Route (Bukan Static)
 export const dynamic = "force-dynamic";
-
-// 2. Memaksa API dijalankan di Node.js Runtime (Bukan Edge Engine)
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   try {
-    // Otentikasi User via ID Token
     const user = await verifyAuthToken(req);
 
     const { searchParams } = new URL(req.url);
@@ -23,7 +19,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // Cari Record Akses spesifik untuk (userId + productId)
+    const adminDb = getAdminDb();
     const accessId = `ACC-${user.uid}-${productId}`;
     const accessRef = adminDb.collection("access").doc(accessId);
     const accessSnap = await accessRef.get();
@@ -37,8 +33,6 @@ export async function GET(req: Request) {
     }
 
     const accessData = accessSnap.data();
-
-    // Evaluasi Status & Tanggal Kadaluarsa
     const now = new Date();
     const expiredAt = new Date(accessData?.expiredAt);
 
@@ -60,7 +54,6 @@ export async function GET(req: Request) {
       });
     }
 
-    // Ambil Detail Aplikasi untuk Redirect/Sesi Online
     const productSnap = await adminDb.collection("products").doc(productId).get();
     const productData = productSnap.data();
 
