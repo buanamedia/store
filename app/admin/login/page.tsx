@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, useEffect, Suspense } from "react";
+import { useState, FormEvent, Suspense } from "react";
 import { useRouter } from "next/navigation";
 
 function LoginContent() {
@@ -36,12 +36,8 @@ function LoginContent() {
 
       localStorage.setItem("admin_token", token);
       router.push("/admin");
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError("Login gagal: " + err.message);
-      } else {
-        setError("Login gagal: Terjadi kesalahan.");
-      }
+    } catch (err: any) {
+      setError("Login gagal: " + (err?.message || "Terjadi kesalahan."));
     } finally {
       setLoading(false);
     }
