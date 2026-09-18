@@ -35,7 +35,6 @@ export default function AdminLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const token = await userCredential.user.getIdToken();
 
-      // Simpan token ke localStorage untuk sesi admin
       localStorage.setItem("admin_token", token);
       router.push("/admin");
     } catch (err: any) {
