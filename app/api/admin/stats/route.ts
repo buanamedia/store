@@ -2,14 +2,18 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/security/auth-guard";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   try {
     const user = await verifyAuthToken(req);
     if (!user.isAdmin) {
-      return NextResponse.json({ error: "FORBIDDEN: Akses khusus Admin." }, { status: 403 });
+      return NextResponse.json(
+        { error: "FORBIDDEN: Akses khusus Admin." },
+        { status: 403 }
+      );
     }
 
-    // Parallel fetch collections untuk optimasi performa
     const [productsSnap, usersSnap, ordersSnap] = await Promise.all([
       adminDb.collection("products").get(),
       adminDb.collection("users").get(),
@@ -41,8 +45,9 @@ export async function GET(req: Request) {
       });
     });
 
-    // Urutkan transaksi terbaru (limit 5)
-    recentOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    recentOrders.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
     const latestFiveOrders = recentOrders.slice(0, 5);
 
     return NextResponse.json({
