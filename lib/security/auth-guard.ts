@@ -1,4 +1,4 @@
-import { adminAuth } from "@/lib/firebase/admin";
+import { getAdminAuth } from "@/lib/firebase/admin";
 
 export interface AuthenticatedUser {
   uid: string;
@@ -16,6 +16,7 @@ export async function verifyAuthToken(req: Request): Promise<AuthenticatedUser> 
   const token = authHeader.split("Bearer ")[1];
 
   try {
+    const adminAuth = getAdminAuth();
     const decodedToken = await adminAuth.verifyIdToken(token);
     const isAdmin = decodedToken.admin === true || decodedToken.role === "admin";
 
