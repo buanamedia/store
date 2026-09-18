@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();
     const headers = req.headers;
 
-    // 1. Ambil Header untuk Verifikasi Signature DOKU
     const clientId = process.env.DOKU_CLIENT_ID;
     const secretKey = process.env.DOKU_SECRET_KEY;
     const signatureHeader = headers.get("signature");
@@ -20,7 +20,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Server configuration missing" }, { status: 500 });
     }
 
-    // 2. Validasi HMAC-SHA256 Signature dari DOKU
     const requestTarget = "/api/doku/webhook";
     const digest = crypto.createHash("sha256").update(rawBody).digest("base64");
     const signatureRaw = `Client-Id:${clientId}\nRequest-Id:${requestId}\nRequest-Timestamp:${requestTimestamp}\nRequest-Target:${requestTarget}\nDigest:${digest}`;
@@ -42,7 +41,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invoice number missing" }, { status: 400 });
     }
 
-    // 3. Cari Order di Firestore
+    const adminDb = getAdminDb();
     const orderRef = adminDb.collection("orders").doc(invoiceNumber);
     const orderSnap = await orderRef.get();
 
@@ -52,7 +51,6 @@ export async function POST(req: Request) {
 
     const orderData = orderSnap.data();
 
-    // Jalankan pembaruan jika status pembayaran SUCCESS dan order masih PENDING
     if (paymentResult === "SUCCESS" && orderData?.status === "PENDING") {
       const now = new Date().toISOString();
 
@@ -62,7 +60,6 @@ export async function POST(req: Request) {
         dokuTransactionId: payload.transaction?.id || "",
       });
 
-      // 4. Ambil Detail Produk untuk Menentukan Hak Akses
       const productSnap = await adminDb.collection("products").doc(orderData.productId).get();
       const productData = productSnap.data();
 
