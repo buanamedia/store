@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/security/auth-guard";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   try {
@@ -14,6 +15,7 @@ export async function GET(req: Request) {
       );
     }
 
+    const adminDb = getAdminDb();
     const [productsSnap, usersSnap, ordersSnap] = await Promise.all([
       adminDb.collection("products").get(),
       adminDb.collection("users").get(),
