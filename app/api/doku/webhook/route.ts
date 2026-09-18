@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import crypto from "crypto";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();
@@ -28,14 +30,13 @@ export async function POST(req: Request) {
       .update(signatureRaw)
       .digest("base64")}`;
 
-    // Jalankan validasi signature (lewati jika testing sandbox internal jika disesuaikan)
     if (signatureHeader && signatureHeader !== calculatedSignature) {
       return NextResponse.json({ error: "INVALID_SIGNATURE" }, { status: 401 });
     }
 
     const payload = JSON.parse(rawBody);
     const invoiceNumber = payload.order?.invoice_number;
-    const paymentResult = payload.transaction?.status; // e.g., 'SUCCESS'
+    const paymentResult = payload.transaction?.status;
 
     if (!invoiceNumber) {
       return NextResponse.json({ error: "Invoice number missing" }, { status: 400 });
@@ -55,7 +56,6 @@ export async function POST(req: Request) {
     if (paymentResult === "SUCCESS" && orderData?.status === "PENDING") {
       const now = new Date().toISOString();
 
-      // Update status Order menjadi PAID
       await orderRef.update({
         status: "PAID",
         paidAt: now,
@@ -68,7 +68,6 @@ export async function POST(req: Request) {
 
       if (productData) {
         if (productData.type === "online") {
-          // Buat record akses ONLINE
           const durationDays = Number(productData.durationDays || 30);
           const expiredDate = new Date();
           expiredDate.setDate(expiredDate.getDate() + durationDays);
@@ -85,7 +84,6 @@ export async function POST(req: Request) {
             createdAt: now,
           });
         } else if (productData.type === "download") {
-          // Buat record hak akses DOWNLOAD
           const accessId = `DL-${orderData.userId}-${orderData.productId}`;
           await adminDb.collection("access").doc(accessId).set({
             accessId,
