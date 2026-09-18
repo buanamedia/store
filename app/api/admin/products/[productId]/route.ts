@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/security/auth-guard";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function PUT(
   req: Request,
@@ -20,6 +21,7 @@ export async function PUT(
     const { productId } = params;
     const body = await req.json();
 
+    const adminDb = getAdminDb();
     const productRef = adminDb.collection("products").doc(productId);
     const docSnap = await productRef.get();
 
@@ -60,6 +62,7 @@ export async function DELETE(
     }
 
     const { productId } = params;
+    const adminDb = getAdminDb();
     await adminDb.collection("products").doc(productId).delete();
 
     return NextResponse.json({
