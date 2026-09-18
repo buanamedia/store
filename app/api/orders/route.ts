@@ -3,9 +3,10 @@ import { adminDb } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/security/auth-guard";
 import { createDokuInvoice } from "@/lib/doku/client";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
-    // 1. Verifikasi User via Firebase Token
     const user = await verifyAuthToken(req);
 
     const body = await req.json();
@@ -15,7 +16,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Product ID wajib diisi." }, { status: 400 });
     }
 
-    // 2. Ambil produk langsung dari Firestore (JANGAN percaya harga dari frontend)
     const productDoc = await adminDb.collection("products").doc(productId).get();
 
     if (!productDoc.exists) {
@@ -28,11 +28,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Produk tidak aktif." }, { status: 400 });
     }
 
-    // 3. Buat ID Transaksi Unik
     const orderId = `ORD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const now = new Date().toISOString();
 
-    // 4. Panggil DOKU Payment Gateway
     const dokuResponse = await createDokuInvoice({
       orderId,
       amount: Number(product.price),
@@ -42,7 +40,6 @@ export async function POST(req: Request) {
 
     const paymentUrl = dokuResponse.response?.payment?.url || dokuResponse.paymentUrl;
 
-    // 5. Simpan Order PENDING ke Firestore Database
     const newOrder = {
       orderId,
       userId: user.uid,
