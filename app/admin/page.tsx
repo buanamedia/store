@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const [formData, setFormData] = useState({
     id: "",
     name: "",
@@ -19,6 +20,7 @@ export default function AdminDashboardPage() {
   const [status, setStatus] = useState("");
 
   useEffect(() => {
+    setIsMounted(true);
     const savedToken = localStorage.getItem("admin_token");
     if (!savedToken) {
       router.push("/admin/login");
@@ -27,7 +29,7 @@ export default function AdminDashboardPage() {
     }
   }, [router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!token) return;
 
@@ -61,10 +63,14 @@ export default function AdminDashboardPage() {
           telegramFileId: "",
         });
       } else {
-        setStatus(`Gagal: ${data.error}`);
+        setStatus(`Gagal: ${data.error || "Terjadi kesalahan"}`);
       }
-    } catch (err: any) {
-      setStatus(`Error: ${err.message}`);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setStatus(`Error: ${err.message}`);
+      } else {
+        setStatus("Error: Terjadi kesalahan sistem.");
+      }
     }
   };
 
@@ -73,7 +79,9 @@ export default function AdminDashboardPage() {
     router.push("/admin/login");
   };
 
-  if (!token) return null;
+  if (!isMounted || !token) {
+    return null;
+  }
 
   return (
     <div style={{ padding: "30px", maxWidth: "700px", margin: "0 auto", fontFamily: "sans-serif" }}>
