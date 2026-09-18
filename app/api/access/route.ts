@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/security/auth-guard";
 
-// GET /api/access?productId=APP001 — Pengecekan lisensi aktif produk ONLINE
+// Wajib untuk API Route yang membaca request/searchParams di Vercel App Router
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     // 1. Otentikasi User via ID Token
@@ -33,7 +35,7 @@ export async function GET(req: Request) {
 
     const accessData = accessSnap.data();
 
-    // 3. Evaluasi Status & Tanggal Kadaluarsa (Expiration)
+    // 3. Evaluasi Status & Tanggal Kadaluarsa
     const now = new Date();
     const expiredAt = new Date(accessData?.expiredAt);
 
@@ -46,7 +48,6 @@ export async function GET(req: Request) {
     }
 
     if (now > expiredAt) {
-      // Auto-update status lisensi menjadi EXPIRED di Firestore
       await accessRef.update({ status: "EXPIRED" });
 
       return NextResponse.json({
