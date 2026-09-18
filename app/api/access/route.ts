@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/security/auth-guard";
 
-// Wajib untuk API Route yang membaca request/searchParams di Vercel App Router
-export const dynamic = 'force-dynamic';
+// 1. Memaksa API menjadi Serverless Dynamic Route (Bukan Static)
+export const dynamic = "force-dynamic";
+
+// 2. Memaksa API dijalankan di Node.js Runtime (Bukan Edge Engine)
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   try {
-    // 1. Otentikasi User via ID Token
+    // Otentikasi User via ID Token
     const user = await verifyAuthToken(req);
 
     const { searchParams } = new URL(req.url);
@@ -20,7 +23,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // 2. Cari Record Akses spesifik untuk (userId + productId)
+    // Cari Record Akses spesifik untuk (userId + productId)
     const accessId = `ACC-${user.uid}-${productId}`;
     const accessRef = adminDb.collection("access").doc(accessId);
     const accessSnap = await accessRef.get();
@@ -35,7 +38,7 @@ export async function GET(req: Request) {
 
     const accessData = accessSnap.data();
 
-    // 3. Evaluasi Status & Tanggal Kadaluarsa
+    // Evaluasi Status & Tanggal Kadaluarsa
     const now = new Date();
     const expiredAt = new Date(accessData?.expiredAt);
 
@@ -57,7 +60,7 @@ export async function GET(req: Request) {
       });
     }
 
-    // 4. Ambil Detail Aplikasi untuk Redirect/Sesi Online
+    // Ambil Detail Aplikasi untuk Redirect/Sesi Online
     const productSnap = await adminDb.collection("products").doc(productId).get();
     const productData = productSnap.data();
 
