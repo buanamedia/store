@@ -1,72 +1,74 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
-import { verifyAuthToken } from "@/lib/security/auth-guard";
 
 export const dynamic = "force-dynamic";
 
-export async function PUT(
+export async function GET(
   req: Request,
   { params }: { params: { productId: string } }
 ) {
   try {
-    const user = await verifyAuthToken(req);
-    if (!user.isAdmin) {
+    const { productId } = params;
+
+    if (!productId) {
       return NextResponse.json(
-        { error: "FORBIDDEN: Akses khusus Admin." },
-        { status: 403 }
+        { error: "Product ID diperlukan." },
+        { status: 400 }
       );
     }
 
-    const { productId } = params;
-    const body = await req.json();
+    const productDoc = await adminDb.collection("products").doc(productId).get();
 
-    const productRef = adminDb.collection("products").doc(productId);
-    const docSnap = await productRef.get();
-
-    if (!docSnap.exists) {
+    if (!productDoc.exists) {
       return NextResponse.json(
         { error: "Produk tidak ditemukan." },
         { status: 404 }
       );
     }
 
-    const updateData = {
-      ...body,
-      updatedAt: new Date().toISOString(),
-    };
+    const data = productDoc.data();
 
-    await productRef.update(updateData);
-
-    return NextResponse.json({
-      success: true,
-      message: "Produk berhasil diperbarui.",
-    });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
-
-export async function DELETE(
-  req: Request,
-  { params }: { params: { productId: string } }
-) {
-  try {
-    const user = await verifyAuthToken(req);
-    if (!user.isAdmin) {
+    if (data?.status !== "active") {
       return NextResponse.json(
-        { error: "FORBIDDEN: Akses khusus Admin." },
+        { error: "Produk tidak aktif atau tidak tersedia." },
         { status: 403 }
       );
     }
 
-    const { productId } = params;
-    await adminDb.collection("products").doc(productId).delete();
+    const publicProductData = {
+      id: productDoc.id,
+      name: data.name,
+      price: Number(data.price),
+      type: data.type,
+      description: data.description || "",
+      version: data.version || "1.0",
+      imageUrl: data.imageUrl || "",
+      durationDays: data.type === "online" ? data.durationDays : undefined,
+    };
 
-    return NextResponse.json({
-      success: true,
-      message: "Produk berhasil dihapus.",
+    return NextResponse.json(publicProductData, {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Gagal mengambil data produk.", details: error.message },
+      { status: 500 }
+    );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
 }
