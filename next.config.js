@@ -1,13 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    // Mengabaikan error TypeScript saat proses build di Vercel
+    // Memaksa Vercel mengabaikan error TypeScript saat build
     ignoreBuildErrors: true,
   },
   eslint: {
-    // Mengabaikan error ESLint saat proses build di Vercel
+    // Memaksa Vercel mengabaikan error ESLint saat build
     ignoreDuringBuilds: true,
   },
+  swcMinify: true,
 };
 
-export default nextConfig;
+module.exports = nextConfig;
