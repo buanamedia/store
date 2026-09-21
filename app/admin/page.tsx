@@ -5,7 +5,7 @@ import React, { useState } from "react";
 export const dynamic = "force-dynamic";
 
 // URL Web App Google Apps Script Anda
-const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx23eHNYQIgdnkZckezSsKvvmOaLqBYreIJRiQJbVZEN_71h6cRZO8LUrEskl2riK_G/exec"; 
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx23eHNYQIgdnkZckezSsKvvmOaLqBYreIJRiQJbVZEN_71h6cRZO8LUrEskl2riK_G/exec";
 
 export default function AdminDashboardPage() {
   const [adminPassword, setAdminPassword] = useState("");
@@ -26,7 +26,7 @@ export default function AdminDashboardPage() {
   const [manualKeys, setManualKeys] = useState("");
   const [generatorApiUrl, setGeneratorApiUrl] = useState("");
   const [appUrl, setAppUrl] = useState("");
-  
+
   // Modus Input File: "UPLOAD" (Direct GAS) atau "MANUAL_ID" (File Telegram Besar)
   const [uploadMode, setUploadMode] = useState<"UPLOAD" | "MANUAL_ID">("UPLOAD");
   const [file, setFile] = useState<File | null>(null);
@@ -176,9 +176,9 @@ export default function AdminDashboardPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setMessage({ 
-          type: "success", 
-          text: `Berhasil! Produk '${id}' tersimpan & siap digunakan. File ID: ${finalTelegramFileId || "N/A"}` 
+        setMessage({
+          type: "success",
+          text: `Berhasil! Produk '${id}' tersimpan & siap digunakan. File ID: ${finalTelegramFileId || "N/A"}`
         });
         setId("");
         setName("");
@@ -448,7 +448,7 @@ export default function AdminDashboardPage() {
               ) : (
                 <div style={{ marginBottom: "20px", background: "#0f172a", padding: "16px", borderRadius: "8px", border: "1px solid #334155" }}>
                   <label style={{ display: "block", fontSize: "0.85rem", color: "#38bdf8", marginBottom: "10px", fontWeight: "bold" }}>Metode Pemasokan File Produk:</label>
-                  
+
                   <div style={{ display: "flex", gap: "16px", marginBottom: "12px" }}>
                     <label style={{ cursor: "pointer", fontSize: "0.85rem" }}>
                       <input
@@ -491,7 +491,7 @@ export default function AdminDashboardPage() {
                         onChange={(e) => setManualTelegramFileId(e.target.value)}
                         style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
                       />
-                      {/* PANDUAN DITAMBAHKAN TEPAT DI SINI */}
+                      {/* PANDUAN PENGAMBILAN TELEGRAM FILE ID */}
                       <div style={{ background: "#1e293b", border: "1px solid #334155", padding: "10px 12px", borderRadius: "6px", marginTop: "8px", fontSize: "0.75rem", color: "#94a3b8" }}>
                         <strong style={{ color: "#38bdf8" }}>Cara Ambil Telegram File ID (File Besar):</strong>
                         <ol style={{ margin: "4px 0 0 0", paddingLeft: "16px", lineHeight: "1.5" }}>
