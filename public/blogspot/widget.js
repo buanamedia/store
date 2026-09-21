@@ -1,5 +1,4 @@
 (function () {
-  // Gunakan domain Vercel langsung untuk menghindari masalah SSL/CORS
   const API_BASE_URL = "https://store-indol-seven.vercel.app";
 
   // Inject Styling Modal
@@ -21,17 +20,20 @@
     .se-input-group { margin-bottom: 12px; text-align: left; }
     .se-input-group label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px; }
     .se-input-group input {
-      width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #475569;
-      background: #0f172a; color: #fff; box-sizing: border-box; font-size: 0.95rem;
+      width: 100% !important; padding: 10px !important; border-radius: 8px !important; border: 1px solid #475569 !important;
+      background-color: #0f172a !important; color: #ffffff !important; box-sizing: border-box !important; font-size: 0.95rem !important;
+    }
+    .se-input-group input::placeholder {
+      color: #64748b !important;
     }
     .se-btn-submit {
-      width: 100%; padding: 12px; background: #2563eb; color: #fff; border: none;
-      border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 1rem;
+      width: 100% !important; padding: 12px !important; background: #2563eb !important; color: #fff !important; border: none !important;
+      border-radius: 8px !important; font-weight: bold !important; cursor: pointer !important; margin-top: 8px !important; font-size: 1rem !important;
     }
     .se-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
     .se-btn-close {
-      background: transparent; border: none; color: #94a3b8; float: right;
-      font-size: 1.2rem; cursor: pointer;
+      background: transparent !important; border: none !important; color: #94a3b8 !important; float: right !important;
+      font-size: 1.2rem !important; cursor: pointer !important;
     }
   `;
   document.head.appendChild(style);
