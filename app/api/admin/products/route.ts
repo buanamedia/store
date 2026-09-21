@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
+// Menaikkan batas waktu eksekusi function Vercel (Hingga 60 detik)
+export const maxDuration = 60; 
 
 // 1. GET: Ambil Semua Daftar Produk dari Firestore
 export async function GET(request: Request) {
@@ -35,7 +37,15 @@ export async function GET(request: Request) {
 // 2. POST: Tambah / Update Produk ke Firestore + Telegram Upload
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch (err) {
+      return NextResponse.json(
+        { success: false, message: "Ukuran file terlalu besar! Batas maksimal serverless Vercel adalah 4.5 MB." },
+        { status: 413 }
+      );
+    }
     
     const adminPasswordInput = formData.get("adminPassword") as string;
     const envAdminPassword = process.env.ADMIN_PASSWORD || "admin123";
@@ -68,6 +78,14 @@ export async function POST(request: Request) {
     let telegramFileId = "";
 
     if (type === "DOWNLOAD" && file && file.size > 0) {
+      // Cek ukuran file sebelum dikirim ke Telegram (Batas Serverless Free Vercel)
+      if (file.size > 4.5 * 1024 * 1024) {
+        return NextResponse.json(
+          { success: false, message: "Ukuran file melebihi 4.5 MB. Harap gunakan file installer yang lebih kecil atau unggah via Telegram Bot manual." },
+          { status: 400 }
+        );
+      }
+
       const botToken = process.env.TELEGRAM_BOT_TOKEN;
       const chatId = process.env.TELEGRAM_CHAT_ID;
 
