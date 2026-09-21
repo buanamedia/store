@@ -92,6 +92,43 @@ export default function AdminDashboardPage() {
     setTimeout(() => setCopiedId(null), 3000);
   };
 
+  // Fungsi Edit Harga Produk
+  const handleEditPrice = async (product: any) => {
+    const inputPrice = prompt(`Masukkan harga baru untuk produk '${product.name}' (Rp):`, product.price);
+    
+    if (inputPrice === null) return; // Batal jika pengguna menekan Cancel
+
+    const newPrice = parseInt(inputPrice.toString().replace(/\D/g, ""), 10);
+
+    if (isNaN(newPrice) || newPrice < 0) {
+      alert("Harga tidak valid!");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          adminPassword,
+          ...product, // Mengirimkan ulang data produk eksis
+          price: newPrice, // Update harga baru
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        alert(`Harga produk '${product.name}' berhasil diubah menjadi Rp ${newPrice.toLocaleString("id-ID")}!`);
+        loadProducts(adminPassword);
+      } else {
+        alert(`Gagal merubah harga: ${data.message}`);
+      }
+    } catch (err: any) {
+      alert("Error saat merubah harga: " + err.message);
+    }
+  };
+
   // Fungsi Hapus Produk dari Firestore & Telegram
   const handleDeleteProduct = async (productId: string, productName: string) => {
     if (!confirm(`Apakah Anda yakin ingin menghapus produk '${productName}' (${productId}) dari database & Telegram?`)) {
@@ -152,7 +189,6 @@ export default function AdminDashboardPage() {
         }
       }
 
-      // PERBAIKAN DI SINI: Menyaring hanya digit (0-9) dan mengonversi langsung ke Integer murni
       const cleanPriceInput = parseInt(price.toString().replace(/\D/g, ""), 10) || 0;
 
       setLoadingStatus("Menyimpan konfigurasi produk ke Firestore...");
@@ -276,6 +312,22 @@ export default function AdminDashboardPage() {
                         </td>
                         <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                            <button
+                              onClick={() => handleEditPrice(p)}
+                              style={{
+                                background: "#f59e0b",
+                                color: "#fff",
+                                border: "none",
+                                padding: "6px 12px",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.75rem",
+                                fontWeight: "bold",
+                                whiteSpace: "nowrap"
+                              }}
+                            >
+                              ✏️ Edit Harga
+                            </button>
                             <button
                               onClick={() => copyBlogspotSnippet(p)}
                               style={{
