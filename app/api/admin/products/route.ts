@@ -133,14 +133,13 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Ambil data produk untuk cek file/pesan Telegram jika ada
     const docRef = db.collection("products").doc(id);
     const docSnap = await docRef.get();
 
     if (docSnap.exists) {
       const pData = docSnap.data();
       
-      // Jika memiliki telegramMessageId / telegramFileId, hapus pesan via Bot Telegram API
+      // Jika memiliki telegramMessageId, hapus pesan via Telegram Bot API
       if (pData?.telegramMessageId && process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
         try {
           await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteMessage`, {
