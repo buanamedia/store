@@ -83,22 +83,25 @@
       try {
         const response = await fetch(`${API_BASE_URL}/api/checkout`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          mode: "cors",
+          headers: { 
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({ productId, customerName, customerEmail }),
         });
 
         const data = await response.json();
 
-        if (data.success && data.paymentUrl) {
+        if (response.ok && data.success && data.paymentUrl) {
           window.location.href = data.paymentUrl;
         } else {
-          alert("Gagal memproses transaksi: " + (data.message || "Terjadi kesalahan"));
+          alert("Gagal memproses transaksi: " + (data.message || "Terjadi kesalahan server"));
           btnSubmit.disabled = false;
           btnSubmit.innerText = "Bayar Sekarang";
         }
       } catch (err) {
         console.error(err);
-        alert("Gagal terhubung ke API Server: " + err.message);
+        alert("Gagal terhubung ke API Server (" + err.message + "). Pastikan environment variables Vercel telah diisi.");
         btnSubmit.disabled = false;
         btnSubmit.innerText = "Bayar Sekarang";
       }
