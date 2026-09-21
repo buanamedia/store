@@ -5,7 +5,7 @@ import React, { useState } from "react";
 export const dynamic = "force-dynamic";
 
 // Tempel URL Web App Google Apps Script Anda di sini (atau ambil dari env)
-const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx.../exec"; 
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx23eHNYQIgdnkZckezSsKvvmOaLqBYreIJRiQJbVZEN_71h6cRZO8LUrEskl2riK_G/exec"; 
 
 export default function AdminDashboardPage() {
   const [adminPassword, setAdminPassword] = useState("");
