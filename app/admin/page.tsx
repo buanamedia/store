@@ -4,7 +4,7 @@ import React, { useState } from "react";
 
 export const dynamic = "force-dynamic";
 
-// URL Web App Google Apps Script Anda
+// Salin dan tempel URL Web App Google Apps Script Anda di bawah ini
 const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx23eHNYQIgdnkZckezSsKvvmOaLqBYreIJRiQJbVZEN_71h6cRZO8LUrEskl2riK_G/exec"; 
 
 export default function AdminDashboardPage() {
@@ -16,7 +16,7 @@ export default function AdminDashboardPage() {
   const [fetchingProducts, setFetchingProducts] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Form State untuk Tambah Produk
+  // Form State untuk Tambah / Update Produk
   const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -96,6 +96,7 @@ export default function AdminDashboardPage() {
     try {
       let finalTelegramFileId = "";
 
+      // 1. Direct Upload ke Google Apps Script jika tipe DOWNLOAD
       if (type === "DOWNLOAD" && file) {
         setLoadingStatus("Mengunggah file ke Telegram via GAS...");
         const base64Data = await fileToBase64(file);
@@ -120,6 +121,9 @@ export default function AdminDashboardPage() {
         finalTelegramFileId = gasData.telegramFileId;
       }
 
+      // 2. Pembersihan & Pembulatan Presisi Harga
+      const cleanPriceInput = Math.round(parseFloat(price.toString().replace(/[^0-9.]/g, "")) || 0);
+
       setLoadingStatus("Menyimpan konfigurasi produk ke Firestore...");
       const res = await fetch("/api/admin/products", {
         method: "POST",
@@ -128,7 +132,7 @@ export default function AdminDashboardPage() {
           adminPassword,
           id: id.trim().toLowerCase().replace(/\s+/g, "-"),
           name,
-          price,
+          price: cleanPriceInput, // Mengirimkan harga integer bulat murni
           type,
           hasLicense,
           licenseMode,
@@ -312,7 +316,7 @@ export default function AdminDashboardPage() {
                 <input
                   type="number"
                   required
-                  placeholder="150000"
+                  placeholder="10000"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
