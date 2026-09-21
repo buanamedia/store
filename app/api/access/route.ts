@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const searchParams = request.nextUrl.searchParams;
     const invoice = searchParams.get("invoice");
     const license = searchParams.get("license");
 
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
       );
     }
 
-    let licenseData = null;
+    let licenseData: any = null;
 
     if (license) {
       const licDoc = await db.collection("licenses").doc(license).get();
@@ -24,7 +25,12 @@ export async function GET(request: Request) {
         licenseData = licDoc.data();
       }
     } else if (invoice) {
-      const licQuery = await db.collection("licenses").where("invoiceNumber", "==", invoice).limit(1).get();
+      const licQuery = await db
+        .collection("licenses")
+        .where("invoiceNumber", "==", invoice)
+        .limit(1)
+        .get();
+
       if (!licQuery.empty) {
         licenseData = licQuery.docs[0].data();
       }
@@ -45,10 +51,11 @@ export async function GET(request: Request) {
       success: true,
       licenseKey: licenseData.licenseKey,
       status: licenseData.status,
-      productName: productData?.name,
+      productName: productData?.name || "Digital Product",
       downloadUrl: `/api/download/${productData?.telegramFileId}`,
     });
   } catch (error: any) {
+    console.error("Access API Error:", error);
     return NextResponse.json(
       { success: false, message: error.message || "Terjadi kesalahan server" },
       { status: 500 }
