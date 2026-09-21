@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 
+export const dynamic = "force-dynamic";
+
 export default function AdminProductsPage() {
   // Authentication State
   const [adminPassword, setAdminPassword] = useState("");
