@@ -59,9 +59,12 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!id || !name || isNaN(Number(price))) {
+    // Memastikan harga dikonversi menjadi integer murni tanpa deviasi desimal
+    const cleanPrice = Math.round(Number(price) || 0);
+
+    if (!id || !name || isNaN(cleanPrice) || cleanPrice <= 0) {
       return NextResponse.json(
-        { success: false, message: "ID Produk, Nama, dan Harga wajib diisi!" },
+        { success: false, message: "ID Produk, Nama, dan Harga Valid wajib diisi!" },
         { status: 400 }
       );
     }
@@ -72,7 +75,7 @@ export async function POST(request: Request) {
 
     const productPayload: Record<string, any> = {
       name,
-      price: Number(price),
+      price: cleanPrice, // Menggunakan angka bulat presisi
       type,
       hasLicense: Boolean(hasLicense),
       licenseMode: hasLicense ? licenseMode : "NONE",
