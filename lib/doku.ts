@@ -9,9 +9,6 @@ interface CreatePaymentParams {
   callbackUrl: string;
 }
 
-/**
- * Generate Header Signature untuk DOKU Checkout
- */
 export function generateDokuSignature(
   clientId: string,
   requestId: string,
@@ -33,17 +30,11 @@ export function generateDokuSignature(
   return `HMACSHA256=${signature}`;
 }
 
-/**
- * Helper untuk membuat SHA256 Digest dari Request Body
- */
 export function generateDigest(bodyString: string): string {
   const hash = CryptoJS.SHA256(bodyString);
   return CryptoJS.enc.Base64.stringify(hash);
 }
 
-/**
- * Request Pembayaran ke DOKU Checkout API
- */
 export async function createDokuCheckoutUrl(params: CreatePaymentParams) {
   const clientId = process.env.DOKU_CLIENT_ID || "";
   const secretKey = process.env.DOKU_SECRET_KEY || "";
