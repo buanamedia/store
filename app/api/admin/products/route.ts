@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
-// Menaikkan batas waktu eksekusi function Vercel (Hingga 60 detik)
-export const maxDuration = 60; 
 
-// 1. GET: Ambil Semua Daftar Produk dari Firestore
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -34,122 +31,58 @@ export async function GET(request: Request) {
   }
 }
 
-// 2. POST: Tambah / Update Produk ke Firestore + Telegram Upload
 export async function POST(request: Request) {
   try {
-    let formData: FormData;
-    try {
-      formData = await request.formData();
-    } catch (err) {
-      return NextResponse.json(
-        { success: false, message: "Ukuran file terlalu besar! Batas maksimal serverless Vercel adalah 4.5 MB." },
-        { status: 413 }
-      );
-    }
-    
-    const adminPasswordInput = formData.get("adminPassword") as string;
-    const envAdminPassword = process.env.ADMIN_PASSWORD || "admin123";
+    const body = await request.json();
+    const { adminPassword, id, name, price, type, hasLicense, licenseMode, manualKeys, generatorApiUrl, appUrl, telegramFileId } = body;
 
-    if (adminPasswordInput !== envAdminPassword) {
+    const envAdminPassword = process.env.ADMIN_PASSWORD || "admin123";
+    if (adminPassword !== envAdminPassword) {
       return NextResponse.json(
         { success: false, message: "Password Admin Salah!" },
         { status: 401 }
       );
     }
 
-    const id = formData.get("id") as string;
-    const name = formData.get("name") as string;
-    const price = Number(formData.get("price"));
-    const type = formData.get("type") as string;
-    const hasLicense = formData.get("hasLicense") === "true";
-    const licenseMode = (formData.get("licenseMode") as string) || "AUTO"; 
-    const manualKeysRaw = (formData.get("manualKeys") as string) || "";
-    const generatorApiUrl = (formData.get("generatorApiUrl") as string) || "";
-    const appUrl = (formData.get("appUrl") as string) || "";
-    const file = formData.get("file") as File | null;
-
-    if (!id || !name || isNaN(price)) {
+    if (!id || !name || isNaN(Number(price))) {
       return NextResponse.json(
         { success: false, message: "ID Produk, Nama, dan Harga wajib diisi!" },
         { status: 400 }
       );
     }
 
-    let telegramFileId = "";
-
-    if (type === "DOWNLOAD" && file && file.size > 0) {
-      // Cek ukuran file sebelum dikirim ke Telegram (Batas Serverless Free Vercel)
-      if (file.size > 4.5 * 1024 * 1024) {
-        return NextResponse.json(
-          { success: false, message: "Ukuran file melebihi 4.5 MB. Harap gunakan file installer yang lebih kecil atau unggah via Telegram Bot manual." },
-          { status: 400 }
-        );
-      }
-
-      const botToken = process.env.TELEGRAM_BOT_TOKEN;
-      const chatId = process.env.TELEGRAM_CHAT_ID;
-
-      if (!botToken || !chatId) {
-        return NextResponse.json(
-          { success: false, message: "TELEGRAM_BOT_TOKEN atau TELEGRAM_CHAT_ID belum diset di Vercel!" },
-          { status: 500 }
-        );
-      }
-
-      const tgFormData = new FormData();
-      tgFormData.append("chat_id", chatId);
-      tgFormData.append("document", file, file.name);
-
-      const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
-        method: "POST",
-        body: tgFormData,
-      });
-
-      const tgData = await tgRes.json();
-
-      if (!tgRes.ok || !tgData.ok) {
-        return NextResponse.json(
-          { success: false, message: "Gagal unggah file ke Telegram: " + (tgData.description || "Error") },
-          { status: 500 }
-        );
-      }
-
-      telegramFileId = tgData.result.document.file_id;
-    }
-
-    const manualKeys = manualKeysRaw
-      .split(/[\n,]+/)
-      .map((k) => k.trim())
-      .filter((k) => k.length > 0);
+    const formattedManualKeys = typeof manualKeys === "string" 
+      ? manualKeys.split(/[\n,]+/).map((k: string) => k.trim()).filter((k: string) => k.length > 0)
+      : [];
 
     const productPayload: Record<string, any> = {
       name,
-      price,
+      price: Number(price),
       type,
-      hasLicense,
+      hasLicense: Boolean(hasLicense),
       licenseMode: hasLicense ? licenseMode : "NONE",
       updatedAt: new Date().toISOString(),
     };
 
     if (hasLicense) {
       if (licenseMode === "MANUAL") {
-        productPayload.manualKeys = manualKeys;
+        productPayload.manualKeys = formattedManualKeys;
       } else if (licenseMode === "GENERATOR") {
-        productPayload.generatorApiUrl = generatorApiUrl;
+        productPayload.generatorApiUrl = generatorApiUrl || "";
       }
     }
 
     if (type === "ACCESS") {
-      productPayload.appUrl = appUrl;
-    } else if (type === "DOWNLOAD" && telegramFileId) {
-      productPayload.telegramFileId = telegramFileId;
+      productPayload.appUrl = appUrl || "";
+    } else if (type === "DOWNLOAD") {
+      productPayload.telegramFileId = telegramFileId || "";
     }
 
     await db.collection("products").doc(id).set(productPayload, { merge: true });
 
     return NextResponse.json({
       success: true,
-      message: "Produk & Konfigurasi Lisensi berhasil disimpan!",
+      message: "Produk berhasil disimpan ke Firestore!",
       productId: id,
     });
   } catch (error: any) {
