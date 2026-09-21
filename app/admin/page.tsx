@@ -152,7 +152,8 @@ export default function AdminDashboardPage() {
         }
       }
 
-      const cleanPriceInput = Math.round(parseFloat(price.toString().replace(/[^0-9.]/g, "")) || 0);
+      // PERBAIKAN DI SINI: Menyaring hanya digit (0-9) dan mengonversi langsung ke Integer murni
+      const cleanPriceInput = parseInt(price.toString().replace(/\D/g, ""), 10) || 0;
 
       setLoadingStatus("Menyimpan konfigurasi produk ke Firestore...");
       const res = await fetch("/api/admin/products", {
