@@ -22,7 +22,7 @@ export default function AdminDashboardPage() {
   const [manualKeys, setManualKeys] = useState("");
   const [generatorApiUrl, setGeneratorApiUrl] = useState("");
   const [appUrl, setAppUrl] = useState("");
-  const [telegramFileId, setTelegramFileId] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -60,35 +60,45 @@ export default function AdminDashboardPage() {
     setMessage(null);
 
     try {
+      const formData = new FormData();
+      formData.append("adminPassword", adminPassword);
+      formData.append("id", id.trim().toLowerCase().replace(/\s+/g, "-"));
+      formData.append("name", name);
+      formData.append("price", price);
+      formData.append("type", type);
+      formData.append("hasLicense", String(hasLicense));
+      
+      if (hasLicense) {
+        formData.append("licenseMode", licenseMode);
+        if (licenseMode === "MANUAL") formData.append("manualKeys", manualKeys);
+        if (licenseMode === "GENERATOR") formData.append("generatorApiUrl", generatorApiUrl);
+      }
+
+      if (type === "ACCESS") {
+        formData.append("appUrl", appUrl);
+      } else if (type === "DOWNLOAD" && file) {
+        formData.append("file", file);
+      }
+
       const res = await fetch("/api/admin/products", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          adminPassword,
-          id: id.trim().toLowerCase().replace(/\s+/g, "-"),
-          name,
-          price,
-          type,
-          hasLicense,
-          licenseMode,
-          manualKeys,
-          generatorApiUrl,
-          appUrl,
-          telegramFileId,
-        }),
+        body: formData,
       });
 
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setMessage({ type: "success", text: `Berhasil! Produk '${id}' tersimpan.` });
+        setMessage({ 
+          type: "success", 
+          text: `Berhasil! Produk '${id}' tersimpan & file terunggah ke Telegram. File ID: ${data.telegramFileId || "N/A"}` 
+        });
         setId("");
         setName("");
         setPrice("");
         setAppUrl("");
-        setTelegramFileId("");
         setManualKeys("");
         setGeneratorApiUrl("");
+        setFile(null);
         loadProducts(adminPassword);
       } else {
         setMessage({ type: "error", text: data.message || "Gagal menyimpan produk." });
@@ -174,7 +184,7 @@ export default function AdminDashboardPage() {
                           {p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
                         </td>
                         <td style={{ padding: "10px", color: "#64748b", fontFamily: "monospace", fontSize: "0.75rem" }}>
-                          {p.type === "ACCESS" ? (p.appUrl || "-") : (p.telegramFileId || "Kosong")}
+                          {p.type === "ACCESS" ? (p.appUrl || "-") : (p.telegramFileId ? `${p.telegramFileId.substring(0, 15)}...` : "Kosong")}
                         </td>
                       </tr>
                     ))}
@@ -318,16 +328,13 @@ export default function AdminDashboardPage() {
                 </div>
               ) : (
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "6px" }}>Telegram File ID (`telegramFileId`)</label>
+                  <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "6px" }}>Unggah File Produk (Otomatis ke Telegram via GAS)</label>
                   <input
-                    type="text"
+                    type="file"
                     required
-                    placeholder="contoh: BQACAg..."
-                    value={telegramFileId}
-                    onChange={(e) => setTelegramFileId(e.target.value)}
-                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
                   />
-                  <small style={{ color: "#64748b", fontSize: "0.75rem", display: "block", marginTop: "4px" }}>Upload file langsung ke Bot/Channel Telegram Anda, lalu salin file_id-nya ke sini.</small>
                 </div>
               )}
 
@@ -347,7 +354,7 @@ export default function AdminDashboardPage() {
                   opacity: loading ? 0.7 : 1,
                 }}
               >
-                {loading ? "Menyimpan Data..." : "Simpan Produk Ke Database"}
+                {loading ? "Mengunggah File & Menyimpan..." : "Simpan Produk Ke Database"}
               </button>
             </form>
           </div>
