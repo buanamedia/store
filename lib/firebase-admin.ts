@@ -1,47 +1,30 @@
 import * as admin from "firebase-admin";
 
-function getFirebaseAdmin() {
-  if (!admin.apps.length) {
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+const projectId = process.env.FIREBASE_PROJECT_ID;
+const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
-    if (!projectId || !clientEmail || !privateKey) {
-      console.warn("Firebase Admin: Environment variables missing during build step.");
-      return null;
-    }
+// Memastikan string \n diubah menjadi enter/newline yang sah
+const privateKey = process.env.FIREBASE_PRIVATE_KEY
+  ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n").replace(/^"|"$/g, "")
+  : undefined;
 
+if (!admin.apps.length) {
+  if (projectId && clientEmail && privateKey) {
     try {
       admin.initializeApp({
         credential: admin.credential.cert({
           projectId,
           clientEmail,
-          privateKey: privateKey.replace(/\\n/g, "\n"),
+          privateKey,
         }),
       });
+      console.log("Firebase Admin initialized successfully.");
     } catch (error) {
       console.error("Firebase Admin initialization error:", error);
     }
+  } else {
+    console.warn("Firebase Admin credentials missing. Lazy loading active.");
   }
-  return admin;
 }
 
-export const db = new Proxy({} as admin.firestore.Firestore, {
-  get(_target, prop) {
-    const adminApp = getFirebaseAdmin();
-    if (!adminApp) {
-      throw new Error("Firebase Admin SDK belum terkonfigurasi di Environment Variables.");
-    }
-    return (adminApp.firestore() as any)[prop];
-  },
-});
-
-export const auth = new Proxy({} as admin.auth.Auth, {
-  get(_target, prop) {
-    const adminApp = getFirebaseAdmin();
-    if (!adminApp) {
-      throw new Error("Firebase Admin SDK belum terkonfigurasi di Environment Variables.");
-    }
-    return (adminApp.auth() as any)[prop];
-  },
-});
+export const db = admin.apps.length ? admin.firestore() : ({} as admin.firestore.Firestore);
