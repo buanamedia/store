@@ -3,6 +3,8 @@ import { db } from "@/lib/firebase-admin";
 import { createDokuCheckoutUrl } from "@/lib/doku";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export async function POST(request: Request) {
   try {
@@ -16,7 +18,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Ambil data produk dari Firestore
     const productDoc = await db.collection("products").doc(productId).get();
     if (!productDoc.exists) {
       return NextResponse.json(
@@ -26,10 +27,8 @@ export async function POST(request: Request) {
     }
     const productData = productDoc.data();
 
-    // 2. Buat Invoice ID Unik
     const invoiceNumber = `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    // 3. Simpan data transaksi sementara ke Firestore
     const orderRef = db.collection("orders").doc(invoiceNumber);
     await orderRef.set({
       invoiceNumber,
@@ -43,7 +42,6 @@ export async function POST(request: Request) {
       updatedAt: new Date().toISOString(),
     });
 
-    // 4. Minta payment URL dari DOKU
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://store.buanamedia.my.id";
     const dokuResponse = await createDokuCheckoutUrl({
       invoiceNumber,
