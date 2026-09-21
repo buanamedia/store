@@ -4,6 +4,9 @@ import React, { useState } from "react";
 
 export const dynamic = "force-dynamic";
 
+// Tempel URL Web App Google Apps Script Anda di sini (atau ambil dari env)
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx.../exec"; 
+
 export default function AdminDashboardPage() {
   const [adminPassword, setAdminPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -25,6 +28,7 @@ export default function AdminDashboardPage() {
   const [file, setFile] = useState<File | null>(null);
 
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const loadProducts = async (pwd: string) => {
@@ -54,35 +58,72 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Fungsi helper membaca File menjadi Base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Ambil string base64 setelah koma (hilangkan header data:application/...)
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
     try {
-      const formData = new FormData();
-      formData.append("adminPassword", adminPassword);
-      formData.append("id", id.trim().toLowerCase().replace(/\s+/g, "-"));
-      formData.append("name", name);
-      formData.append("price", price);
-      formData.append("type", type);
-      formData.append("hasLicense", String(hasLicense));
-      
-      if (hasLicense) {
-        formData.append("licenseMode", licenseMode);
-        if (licenseMode === "MANUAL") formData.append("manualKeys", manualKeys);
-        if (licenseMode === "GENERATOR") formData.append("generatorApiUrl", generatorApiUrl);
+      let finalTelegramFileId = "";
+
+      // 1. Jika Tipe DOWNLOAD & Ada File -> Unggah LANGSUNG ke Google Apps Script dari Browser
+      if (type === "DOWNLOAD" && file) {
+        setLoadingStatus("Mengunggah file ke Telegram via GAS...");
+        const base64Data = await fileToBase64(file);
+
+        const gasRes = await fetch(GAS_WEBAPP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" }, // Gunakan text/plain untuk menghindari batasan CORS preflight GAS
+          body: JSON.stringify({
+            secretKey: "gpfadmin123",
+            fileName: file.name,
+            category: "ZIP",
+            fileData: base64Data,
+          }),
+        });
+
+        const gasData = await gasRes.json();
+
+        if (!gasData || !gasData.success) {
+          throw new Error("Gagal Unggah ke Telegram (GAS): " + (gasData?.message || "Error Tidak Diketahui"));
+        }
+
+        finalTelegramFileId = gasData.telegramFileId;
       }
 
-      if (type === "ACCESS") {
-        formData.append("appUrl", appUrl);
-      } else if (type === "DOWNLOAD" && file) {
-        formData.append("file", file);
-      }
-
+      // 2. Simpan Data Produk ke Firestore Vercel Backend
+      setLoadingStatus("Menyimpan konfigurasi produk ke Firestore...");
       const res = await fetch("/api/admin/products", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          adminPassword,
+          id: id.trim().toLowerCase().replace(/\s+/g, "-"),
+          name,
+          price,
+          type,
+          hasLicense,
+          licenseMode,
+          manualKeys,
+          generatorApiUrl,
+          appUrl,
+          telegramFileId: finalTelegramFileId,
+        }),
       });
 
       const data = await res.json();
@@ -90,7 +131,7 @@ export default function AdminDashboardPage() {
       if (res.ok && data.success) {
         setMessage({ 
           type: "success", 
-          text: `Berhasil! Produk '${id}' tersimpan & file terunggah ke Telegram. File ID: ${data.telegramFileId || "N/A"}` 
+          text: `Berhasil! Produk '${id}' tersimpan & terunggah ke Telegram. File ID: ${finalTelegramFileId || "N/A"}` 
         });
         setId("");
         setName("");
@@ -107,6 +148,7 @@ export default function AdminDashboardPage() {
       setMessage({ type: "error", text: "Terjadi kesalahan: " + err.message });
     } finally {
       setLoading(false);
+      setLoadingStatus("");
     }
   };
 
@@ -145,7 +187,7 @@ export default function AdminDashboardPage() {
             <button onClick={() => setIsAuthenticated(false)} style={{ background: "#ef4444", border: "none", color: "#fff", padding: "8px 16px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "0.85rem" }}>Logout</button>
           </div>
 
-          {/* 1. TABEL DAFTAR PRODUK */}
+          {/* TABEL DAFTAR PRODUK */}
           <div style={{ background: "#1e293b", padding: "24px", borderRadius: "16px", border: "1px solid #334155", marginBottom: "32px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#f8fafc" }}>Daftar Produk di Database ({products.length})</h2>
@@ -194,7 +236,7 @@ export default function AdminDashboardPage() {
             )}
           </div>
 
-          {/* 2. FORM TAMBAH / UPDATE PRODUK */}
+          {/* FORM TAMBAH / UPDATE PRODUK */}
           <div style={{ background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid #334155" }}>
             <h2 style={{ fontSize: "1.1rem", margin: "0 0 16px 0", color: "#f8fafc" }}>Tambah / Update Produk Baru</h2>
 
@@ -328,7 +370,7 @@ export default function AdminDashboardPage() {
                 </div>
               ) : (
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "6px" }}>Unggah File Produk (Otomatis ke Telegram via GAS)</label>
+                  <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "6px" }}>Unggah File Produk (Otomatis Direct ke Telegram via GAS)</label>
                   <input
                     type="file"
                     required
@@ -354,7 +396,7 @@ export default function AdminDashboardPage() {
                   opacity: loading ? 0.7 : 1,
                 }}
               >
-                {loading ? "Mengunggah File & Menyimpan..." : "Simpan Produk Ke Database"}
+                {loading ? (loadingStatus || "Memproses...") : "Simpan Produk Ke Database"}
               </button>
             </form>
           </div>
