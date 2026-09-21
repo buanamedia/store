@@ -1,8 +1,6 @@
 (function () {
-  // Ganti URL ini dengan domain Vercel Anda jika berbeda
   const API_BASE_URL = "https://store.buanamedia.my.id";
 
-  // Inject Styling Dasar Modal
   const style = document.createElement("style");
   style.innerHTML = `
     .se-modal-overlay {
@@ -36,7 +34,6 @@
   `;
   document.head.appendChild(style);
 
-  // Buat Elemen Modal HTML
   const modalHTML = `
     <div class="se-modal-overlay" id="seModal">
       <div class="se-modal-card">
@@ -67,11 +64,9 @@
   const btnSubmit = document.getElementById("seBtnSubmit");
   const inputProductId = document.getElementById("seProductId");
 
-  // Handler Buka & Tutup Modal
   btnClose.onclick = () => modal.classList.remove("active");
   window.onclick = (e) => { if (e.target === modal) modal.classList.remove("active"); };
 
-  // Trigger Tombol Checkout di Blogspot
   document.addEventListener("click", function (e) {
     const btn = e.target.closest("[data-store-product]");
     if (btn) {
@@ -82,7 +77,6 @@
     }
   });
 
-  // Submit Form Checkout ke API STORE Engine
   form.onsubmit = async function (e) {
     e.preventDefault();
     btnSubmit.disabled = true;
@@ -102,7 +96,6 @@
       const data = await response.json();
 
       if (data.success && data.paymentUrl) {
-        // Direct Pelanggan ke DOKU Checkout
         window.location.href = data.paymentUrl;
       } else {
         alert("Gagal memproses transaksi: " + (data.message || "Terjadi kesalahan"));
