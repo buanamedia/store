@@ -24,10 +24,9 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json({ success: true, products });
-  } catch (error: unknown) {
-    const errMessage = error instanceof Error ? error.message : "Unknown error";
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, message: "Server Error: " + errMessage },
+      { success: false, message: "Server Error: " + error.message },
       { status: 500 }
     );
   }
@@ -73,7 +72,7 @@ export async function POST(request: Request) {
       ? manualKeys.split(/[\n,]+/).map((k: string) => k.trim()).filter((k: string) => k.length > 0)
       : [];
 
-    const productPayload: Record<string, unknown> = {
+    const productPayload: Record<string, any> = {
       name,
       price: cleanPrice,
       type,
@@ -103,11 +102,10 @@ export async function POST(request: Request) {
       message: "Produk berhasil disimpan!",
       productId: id,
     });
-  } catch (error: unknown) {
-    const errMessage = error instanceof Error ? error.message : "Unknown error";
+  } catch (error: any) {
     console.error("Admin Product Creation Error:", error);
     return NextResponse.json(
-      { success: false, message: "Server Error: " + errMessage },
+      { success: false, message: "Server Error: " + error.message },
       { status: 500 }
     );
   }
@@ -135,12 +133,14 @@ export async function DELETE(request: Request) {
       );
     }
 
+    // Ambil data produk untuk cek file/pesan Telegram jika ada
     const docRef = db.collection("products").doc(id);
     const docSnap = await docRef.get();
 
     if (docSnap.exists) {
       const pData = docSnap.data();
       
+      // Jika memiliki telegramMessageId / telegramFileId, hapus pesan via Bot Telegram API
       if (pData?.telegramMessageId && process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
         try {
           await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteMessage`, {
@@ -156,6 +156,7 @@ export async function DELETE(request: Request) {
         }
       }
 
+      // Hapus dokumen dari Firestore
       await docRef.delete();
     }
 
@@ -163,10 +164,9 @@ export async function DELETE(request: Request) {
       success: true,
       message: `Produk '${id}' berhasil dihapus dari database!`,
     });
-  } catch (error: unknown) {
-    const errMessage = error instanceof Error ? error.message : "Unknown error";
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, message: "Server Error: " + errMessage },
+      { success: false, message: "Server Error: " + error.message },
       { status: 500 }
     );
   }
