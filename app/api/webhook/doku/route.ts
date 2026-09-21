@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // DOKU menyertakan invoice_number di objek order
     const invoiceNumber = body?.order?.invoice_number;
-    const transactionStatus = body?.transaction?.status; // DOKU mengirimkan "SUCCESS" jika berhasil
+    const transactionStatus = body?.transaction?.status;
 
     if (!invoiceNumber) {
       return NextResponse.json({ success: false, message: "Invalid payload" }, { status: 400 });
@@ -25,13 +26,11 @@ export async function POST(request: Request) {
     if (transactionStatus === "SUCCESS") {
       const orderData = orderDoc.data();
 
-      // 1. Update status order menjadi PAID
       await orderRef.update({
         status: "PAID",
         updatedAt: new Date().toISOString(),
       });
 
-      // 2. Generate License Key jika belum ada
       const licenseKey = `LIC-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
       await db.collection("licenses").doc(licenseKey).set({
