@@ -3,10 +3,12 @@ import * as admin from "firebase-admin";
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
-// Memastikan string \n diubah menjadi enter/newline yang sah
-const privateKey = process.env.FIREBASE_PRIVATE_KEY
-  ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n").replace(/^"|"$/g, "")
-  : undefined;
+// Memastikan string \n dikonversi menjadi enter/newline yang valid
+// serta membersihkan tanda petik di awal/akhir string
+const rawKey = process.env.FIREBASE_PRIVATE_KEY || "";
+const privateKey = rawKey
+  .replace(/^"|"$/g, "")
+  .replace(/\\n/g, "\n");
 
 if (!admin.apps.length) {
   if (projectId && clientEmail && privateKey) {
@@ -18,12 +20,12 @@ if (!admin.apps.length) {
           privateKey,
         }),
       });
-      console.log("Firebase Admin initialized successfully.");
+      console.log("Firebase Admin Service Account connected.");
     } catch (error) {
-      console.error("Firebase Admin initialization error:", error);
+      console.error("Firebase Admin Initialization Error:", error);
     }
   } else {
-    console.warn("Firebase Admin credentials missing. Lazy loading active.");
+    console.warn("Firebase credentials missing. Check Vercel Environment Variables.");
   }
 }
 
