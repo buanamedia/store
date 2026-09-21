@@ -447,7 +447,7 @@ export default function AdminDashboardPage() {
                 </div>
               ) : (
                 <div style={{ marginBottom: "20px", background: "#0f172a", padding: "16px", borderRadius: "8px", border: "1px solid #334155" }}>
-                  <label style={{ display: "block", fontSize: "0.85rem", color: "#38bdf8", marginBottom: "10px", fontWeight: "bold" }}>Metode Pemasok File Produk:</label>
+                  <label style={{ display: "block", fontSize: "0.85rem", color: "#38bdf8", marginBottom: "10px", fontWeight: "bold" }}>Metode Pemasokan File Produk:</label>
                   
                   <div style={{ display: "flex", gap: "16px", marginBottom: "12px" }}>
                     <label style={{ cursor: "pointer", fontSize: "0.85rem" }}>
@@ -491,7 +491,15 @@ export default function AdminDashboardPage() {
                         onChange={(e) => setManualTelegramFileId(e.target.value)}
                         style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
                       />
-                      <small style={{ color: "#94a3b8", fontSize: "0.75rem", display: "block", marginTop: "4px" }}>Gunakan pilihan ini jika Anda telah mengunggah file besar langsung di Telegram Bot/Channel Anda.</small>
+                      {/* PANDUAN DITAMBAHKAN DI SINI */}
+                      <div style={{ background: "#1e293b", border: "1px solid #334155", padding: "10px 12px", borderRadius: "6px", marginTop: "8px", fontSize: "0.75rem", color: "#94a3b8" }}>
+                        <strong style={{ color: "#38bdf8" }}>Cara Ambil Telegram File ID (File Besar):</strong>
+                        <ol style={{ margin: "4px 0 0 0", paddingLeft: "16px", lineHeight: "1.5" }}>
+                          <li>Kirim file aplikasi berukuran besar langsung ke Bot Telegram Anda.</li>
+                          <li>Buka browser dan akses: <code style={{ color: "#f1f5f9" }}>https://api.telegram.org/bot8866448027:AAGnI1f00nwAk0LF9Ge5mYlXVi_mJQoVnk8/getUpdates</code></li>
+                          <li>Cari teks <code style={{ color: "#f1f5f9" }}>"file_id"</code> pada objek dokumen, lalu salin kodenya dan tempelkan di kolom atas.</li>
+                        </ol>
+                      </div>
                     </div>
                   )}
                 </div>
