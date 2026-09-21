@@ -24,9 +24,10 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json({ success: true, products });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { success: false, message: "Server Error: " + error.message },
+      { success: false, message: "Server Error: " + errMessage },
       { status: 500 }
     );
   }
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
       ? manualKeys.split(/[\n,]+/).map((k: string) => k.trim()).filter((k: string) => k.length > 0)
       : [];
 
-    const productPayload: Record<string, any> = {
+    const productPayload: Record<string, unknown> = {
       name,
       price: cleanPrice,
       type,
@@ -102,10 +103,11 @@ export async function POST(request: Request) {
       message: "Produk berhasil disimpan!",
       productId: id,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Admin Product Creation Error:", error);
     return NextResponse.json(
-      { success: false, message: "Server Error: " + error.message },
+      { success: false, message: "Server Error: " + errMessage },
       { status: 500 }
     );
   }
@@ -139,7 +141,6 @@ export async function DELETE(request: Request) {
     if (docSnap.exists) {
       const pData = docSnap.data();
       
-      // Jika memiliki telegramMessageId, hapus pesan via Telegram Bot API
       if (pData?.telegramMessageId && process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
         try {
           await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteMessage`, {
@@ -155,7 +156,6 @@ export async function DELETE(request: Request) {
         }
       }
 
-      // Hapus dokumen dari Firestore
       await docRef.delete();
     }
 
@@ -163,9 +163,10 @@ export async function DELETE(request: Request) {
       success: true,
       message: `Produk '${id}' berhasil dihapus dari database!`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { success: false, message: "Server Error: " + error.message },
+      { success: false, message: "Server Error: " + errMessage },
       { status: 500 }
     );
   }
