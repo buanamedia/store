@@ -1,6 +1,21 @@
 (function () {
-  const API_BASE_URL = "https://store-indol-seven.vercel.app";
+  // Otomatis mengambil domain asal dari mana file script ini dimuat
+  const currentScript = document.currentScript || (function() {
+    const scripts = document.getElementsByTagName('script');
+    return scripts[scripts.length - 1];
+  })();
+  
+  let API_BASE_URL = "https://store-indol-seven.vercel.app";
+  if (currentScript && currentScript.src) {
+    try {
+      const urlObj = new URL(currentScript.src);
+      API_BASE_URL = urlObj.origin;
+    } catch (e) {
+      console.error("Gagal mendeteksi origin script:", e);
+    }
+  }
 
+  // Inject Styling Modal
   const style = document.createElement("style");
   style.innerHTML = `
     .se-modal-overlay {
@@ -83,7 +98,6 @@
       try {
         const response = await fetch(`${API_BASE_URL}/api/checkout`, {
           method: "POST",
-          mode: "cors",
           headers: { 
             "Content-Type": "application/json"
           },
@@ -101,7 +115,7 @@
         }
       } catch (err) {
         console.error(err);
-        alert("Gagal terhubung ke API Server (" + err.message + "). Pastikan environment variables Vercel telah diisi.");
+        alert("Gagal terhubung ke API Server (" + err.message + "). Pastikan backend Vercel aktif.");
         btnSubmit.disabled = false;
         btnSubmit.innerText = "Bayar Sekarang";
       }
