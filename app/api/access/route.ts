@@ -44,7 +44,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // 2. Cari Lisensi Terkait
+    // 2. Cari / Buat Lisensi Terkait
     const licenseSnapshot = await db
       .collection("licenses")
       .where("invoiceNumber", "==", invoiceNumber)
@@ -56,7 +56,6 @@ export async function GET(request: Request) {
     if (!licenseSnapshot.empty) {
       licenseKey = licenseSnapshot.docs[0].data().licenseKey;
     } else {
-      // Jika Lisensi belum ada, buat otomatis
       licenseKey = `LIC-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       await db.collection("licenses").add({
         licenseKey,
@@ -68,12 +67,31 @@ export async function GET(request: Request) {
       });
     }
 
-    // 3. Ambil data produk untuk telegramFileId
+    // 3. Ambil Detail Produk untuk Menentukan Tipe Tampilan
     const productDoc = await db.collection("products").doc(orderData.productId).get();
     const productData = productDoc.data();
+    
+    // Tipe Produk: "DOWNLOAD" (default) atau "ACCESS"
+    const productType = productData?.type || "DOWNLOAD"; 
     const telegramFileId = productData?.telegramFileId || "";
+    const targetAppUrl = productData?.appUrl || "#";
 
-    // 4. Render Tampilan HTML Rapi untuk Pembeli
+    // 4. Render Tombol Aksi Berdasarkan Tipe Produk
+    let actionButtonHtml = "";
+
+    if (productType === "ACCESS") {
+      actionButtonHtml = `
+        <a href="${targetAppUrl}" target="_blank" class="btn-action btn-access">Buka Aplikasi / Login</a>
+        <p class="instruction">Gunakan Kode Lisensi dan Email Anda untuk login ke dalam aplikasi.</p>
+      `;
+    } else {
+      actionButtonHtml = `
+        <a href="/api/download/${telegramFileId || "default"}" class="btn-action btn-download">Unduh File Software</a>
+        <p class="instruction">Gunakan Kode Lisensi di atas saat menjalankan installer/aplikasi.</p>
+      `;
+    }
+
+    // 5. Render Halaman HTML Rapi
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="id">
@@ -115,7 +133,7 @@ export async function GET(request: Request) {
             margin-bottom: 16px; 
           }
           h1 { font-size: 1.5rem; margin: 0 0 8px 0; color: #fff; }
-          p { color: #94a3b8; font-size: 0.95rem; margin: 0 0 24px 0; }
+          p.sub { color: #94a3b8; font-size: 0.95rem; margin: 0 0 24px 0; }
           .license-title { text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #94a3b8; font-weight: 600; }
           .license-box { 
             background: #0f172a; 
@@ -126,15 +144,14 @@ export async function GET(request: Request) {
             font-size: 1.2rem; 
             color: #38bdf8; 
             letter-spacing: 1px; 
-            margin-bottom: 24px; 
+            margin-bottom: 20px; 
             word-break: break-all; 
             user-select: all;
           }
-          .btn-download { 
+          .btn-action { 
             display: block; 
             width: 100%; 
             padding: 14px; 
-            background: #2563eb; 
             color: #fff; 
             text-decoration: none; 
             border-radius: 8px; 
@@ -143,20 +160,24 @@ export async function GET(request: Request) {
             box-sizing: border-box; 
             transition: background 0.2s; 
           }
+          .btn-download { background: #2563eb; }
           .btn-download:hover { background: #1d4ed8; }
-          .footer { margin-top: 24px; font-size: 0.8rem; color: #64748b; }
+          .btn-access { background: #059669; }
+          .btn-access:hover { background: #047857; }
+          .instruction { font-size: 0.8rem; color: #64748b; margin-top: 12px; margin-bottom: 0; }
+          .footer { margin-top: 24px; font-size: 0.8rem; color: #64748b; border-top: 1px solid #334155; padding-top: 16px; }
         </style>
       </head>
       <body>
         <div class="card">
           <span class="badge">PEMBAYARAN BERHASIL</span>
           <h1>${orderData.productName || "Digital Product"}</h1>
-          <p>Terima kasih! Pembelian Anda telah dikonfirmasi.</p>
+          <p class="sub">Terima kasih! Pembelian Anda telah dikonfirmasi.</p>
           
           <div class="license-title">KODE LISENSI ANDA:</div>
           <div class="license-box">${licenseKey}</div>
           
-          <a href="/api/download/${telegramFileId || "default"}" class="btn-download">Unduh File Produk</a>
+          ${actionButtonHtml}
           
           <div class="footer">Invoice: ${invoiceNumber} | Email: ${orderData.customerEmail}</div>
         </div>
