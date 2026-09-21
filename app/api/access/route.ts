@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,7 +44,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Ambil data Telegram Storage ID dari Dokumen Produk
     const productDoc = await db.collection("products").doc(licenseData.productId).get();
     const productData = productDoc.data();
 
