@@ -1,7 +1,6 @@
 (function () {
   const API_BASE_URL = "https://store-indol-seven.vercel.app";
 
-  // Inject Styling Modal
   const style = document.createElement("style");
   style.innerHTML = `
     .se-modal-overlay {
@@ -23,9 +22,7 @@
       width: 100% !important; padding: 10px !important; border-radius: 8px !important; border: 1px solid #475569 !important;
       background-color: #0f172a !important; color: #ffffff !important; box-sizing: border-box !important; font-size: 0.95rem !important;
     }
-    .se-input-group input::placeholder {
-      color: #64748b !important;
-    }
+    .se-input-group input::placeholder { color: #64748b !important; }
     .se-btn-submit {
       width: 100% !important; padding: 12px !important; background: #2563eb !important; color: #fff !important; border: none !important;
       border-radius: 8px !important; font-weight: bold !important; cursor: pointer !important; margin-top: 8px !important; font-size: 1rem !important;
@@ -38,7 +35,6 @@
   `;
   document.head.appendChild(style);
 
-  // Inject Elemen Modal HTML
   function initModal() {
     if (document.getElementById("seModal")) return;
 
@@ -102,14 +98,13 @@
         }
       } catch (err) {
         console.error(err);
-        alert("Terjadi kesalahan jaringan atau server.");
+        alert("Gagal terhubung ke API Server: " + err.message);
         btnSubmit.disabled = false;
         btnSubmit.innerText = "Bayar Sekarang";
       }
     };
   }
 
-  // Event Listener Tombol
   document.addEventListener("click", function (e) {
     const btn = e.target.closest("[data-store-product], .se-buy-btn");
     if (btn) {
