@@ -1,18 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const fileId = params.id;
+    const fileId = params?.id;
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
 
     if (!fileId || !botToken) {
       return NextResponse.json(
-        { success: false, message: "Konfigurasi file tidak valid" },
+        { success: false, message: "Konfigurasi file atau token tidak valid" },
         { status: 400 }
       );
     }
@@ -52,6 +53,7 @@ export async function GET(
       headers,
     });
   } catch (error: any) {
+    console.error("Download API Error:", error);
     return NextResponse.json(
       { success: false, message: error.message || "Gagal memproses unduhan" },
       { status: 500 }
