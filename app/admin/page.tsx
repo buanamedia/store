@@ -4,16 +4,19 @@ import React, { useState } from "react";
 
 export const dynamic = "force-dynamic";
 
-const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx23eHNYQIgdnkZckezSsKvvmOaLqBYreIJRiQJbVZEN_71h6cRZO8LUrEskl2riK_G/exec";
+// URL Web App Google Apps Script Anda
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx23eHNYQIgdnkZckezSsKvvmOaLqBYreIJRiQJbVZEN_71h6cRZO8LUrEskl2riK_G/exec"; 
 
 export default function AdminDashboardPage() {
   const [adminPassword, setAdminPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Data Products dari Database
   const [products, setProducts] = useState<any[]>([]);
   const [fetchingProducts, setFetchingProducts] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Form State untuk Tambah / Update Produk
   const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -23,7 +26,8 @@ export default function AdminDashboardPage() {
   const [manualKeys, setManualKeys] = useState("");
   const [generatorApiUrl, setGeneratorApiUrl] = useState("");
   const [appUrl, setAppUrl] = useState("");
-
+  
+  // Modus Input File: "UPLOAD" (Direct GAS) atau "MANUAL_ID" (File Telegram Besar)
   const [uploadMode, setUploadMode] = useState<"UPLOAD" | "MANUAL_ID">("UPLOAD");
   const [file, setFile] = useState<File | null>(null);
   const [manualTelegramFileId, setManualTelegramFileId] = useState("");
@@ -72,6 +76,7 @@ export default function AdminDashboardPage() {
     });
   };
 
+  // Copy Snippet Kode Blogspot
   const copyBlogspotSnippet = (product: any) => {
     const formattedPrice = Number(product.price || 0).toLocaleString("id-ID");
     const snippet = `<!-- Script Widget STORE Engine -->
@@ -87,6 +92,7 @@ export default function AdminDashboardPage() {
     setTimeout(() => setCopiedId(null), 3000);
   };
 
+  // Fungsi Hapus Produk dari Firestore & Telegram
   const handleDeleteProduct = async (productId: string, productName: string) => {
     if (!confirm(`Apakah Anda yakin ingin menghapus produk '${productName}' (${productId}) dari database & Telegram?`)) {
       return;
@@ -170,9 +176,9 @@ export default function AdminDashboardPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setMessage({
-          type: "success",
-          text: `Berhasil! Produk '${id}' tersimpan & siap digunakan. File ID: ${finalTelegramFileId || "N/A"}`
+        setMessage({ 
+          type: "success", 
+          text: `Berhasil! Produk '${id}' tersimpan & siap digunakan. File ID: ${finalTelegramFileId || "N/A"}` 
         });
         setId("");
         setName("");
@@ -197,6 +203,7 @@ export default function AdminDashboardPage() {
   return (
     <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", padding: "40px 20px", fontFamily: "sans-serif" }}>
       {!isAuthenticated ? (
+        /* Layar Login Admin */
         <div style={{ maxWidth: "400px", width: "100%", margin: "80px auto 0 auto", background: "#1e293b", padding: "32px", borderRadius: "16px", border: "1px solid #334155", textAlign: "center" }}>
           <h2 style={{ color: "#38bdf8", marginTop: 0 }}>STORE Admin Login</h2>
           <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginBottom: "24px" }}>Masukkan Password Admin Vercel Anda untuk melanjutkan.</p>
@@ -218,6 +225,7 @@ export default function AdminDashboardPage() {
           </form>
         </div>
       ) : (
+        /* Dashboard Admin Main View */
         <div style={{ maxWidth: "1050px", margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155" }}>
             <div>
@@ -439,8 +447,8 @@ export default function AdminDashboardPage() {
                 </div>
               ) : (
                 <div style={{ marginBottom: "20px", background: "#0f172a", padding: "16px", borderRadius: "8px", border: "1px solid #334155" }}>
-                  <label style={{ display: "block", fontSize: "0.85rem", color: "#38bdf8", marginBottom: "10px", fontWeight: "bold" }}>Metode Pemasokan File Produk:</label>
-
+                  <label style={{ display: "block", fontSize: "0.85rem", color: "#38bdf8", marginBottom: "10px", fontWeight: "bold" }}>Metode Pemasok File Produk:</label>
+                  
                   <div style={{ display: "flex", gap: "16px", marginBottom: "12px" }}>
                     <label style={{ cursor: "pointer", fontSize: "0.85rem" }}>
                       <input
@@ -483,14 +491,7 @@ export default function AdminDashboardPage() {
                         onChange={(e) => setManualTelegramFileId(e.target.value)}
                         style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
                       />
-                      <div style={{ background: "#1e293b", border: "1px solid #334155", padding: "10px 12px", borderRadius: "6px", marginTop: "8px", fontSize: "0.75rem", color: "#94a3b8" }}>
-                        <strong style={{ color: "#38bdf8" }}>Cara Ambil Telegram File ID (File Besar):</strong>
-                        <ol style={{ margin: "4px 0 0 0", paddingLeft: "16px", lineHeight: "1.5" }}>
-                          <li>Kirim file aplikasi berukuran besar langsung ke Bot Telegram Anda.</li>
-                          <li>Buka browser dan akses: <code style={{ color: "#f1f5f9" }}>https://api.telegram.org/bot&lt;TOKEN_BOT&gt;/getUpdates</code></li>
-                          <li>Cari teks <code style={{ color: "#f1f5f9" }}>"file_id"</code> pada objek dokumen, lalu salin kodenya dan tempelkan di kolom atas.</li>
-                        </ol>
-                      </div>
+                      <small style={{ color: "#94a3b8", fontSize: "0.75rem", display: "block", marginTop: "4px" }}>Gunakan pilihan ini jika Anda telah mengunggah file besar langsung di Telegram Bot/Channel Anda.</small>
                     </div>
                   )}
                 </div>
