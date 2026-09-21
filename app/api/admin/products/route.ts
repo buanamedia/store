@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   }
 }
 
-// 2. POST: Simpan Konfigurasi Produk ke Firestore
+// 2. POST: Simpan / Update Konfigurasi Produk ke Firestore
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -59,7 +59,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Memastikan harga dikonversi menjadi integer murni tanpa deviasi desimal
     const cleanPrice = Math.round(Number(price) || 0);
 
     if (!id || !name || isNaN(cleanPrice) || cleanPrice <= 0) {
@@ -75,7 +74,7 @@ export async function POST(request: Request) {
 
     const productPayload: Record<string, any> = {
       name,
-      price: cleanPrice, // Menggunakan angka bulat presisi
+      price: cleanPrice,
       type,
       hasLicense: Boolean(hasLicense),
       licenseMode: hasLicense ? licenseMode : "NONE",
@@ -100,11 +99,72 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Produk & Konfigurasi Lisensi berhasil disimpan!",
+      message: "Produk berhasil disimpan!",
       productId: id,
     });
   } catch (error: any) {
     console.error("Admin Product Creation Error:", error);
+    return NextResponse.json(
+      { success: false, message: "Server Error: " + error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// 3. DELETE: Hapus Produk dari Firestore & Pesan Telegram (jika ada)
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const adminPasswordInput = searchParams.get("password");
+    const envAdminPassword = process.env.ADMIN_PASSWORD || "admin123";
+
+    if (adminPasswordInput !== envAdminPassword) {
+      return NextResponse.json(
+        { success: false, message: "Password Admin Salah!" },
+        { status: 401 }
+      );
+    }
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "ID Produk tidak ditemukan!" },
+        { status: 400 }
+      );
+    }
+
+    // Ambil data produk untuk cek file/pesan Telegram jika ada
+    const docRef = db.collection("products").doc(id);
+    const docSnap = await docRef.get();
+
+    if (docSnap.exists) {
+      const pData = docSnap.data();
+      
+      // Jika memiliki telegramMessageId / telegramFileId, hapus pesan via Bot Telegram API
+      if (pData?.telegramMessageId && process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+        try {
+          await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: process.env.TELEGRAM_CHAT_ID,
+              message_id: pData.telegramMessageId,
+            }),
+          });
+        } catch (tgErr) {
+          console.error("Gagal hapus pesan Telegram:", tgErr);
+        }
+      }
+
+      // Hapus dokumen dari Firestore
+      await docRef.delete();
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Produk '${id}' berhasil dihapus dari database!`,
+    });
+  } catch (error: any) {
     return NextResponse.json(
       { success: false, message: "Server Error: " + error.message },
       { status: 500 }
