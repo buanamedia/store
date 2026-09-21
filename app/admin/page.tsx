@@ -491,7 +491,7 @@ export default function AdminDashboardPage() {
                         onChange={(e) => setManualTelegramFileId(e.target.value)}
                         style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
                       />
-                      {/* BLOK PANDUAN DITAMBAHKAN DI SINI */}
+                      {/* PANDUAN PENGAMBILAN TELEGRAM FILE ID */}
                       <div style={{ background: "#1e293b", border: "1px solid #334155", padding: "10px 12px", borderRadius: "6px", marginTop: "8px", fontSize: "0.75rem", color: "#94a3b8" }}>
                         <strong style={{ color: "#38bdf8" }}>Cara Ambil Telegram File ID (File Besar):</strong>
                         <ol style={{ margin: "4px 0 0 0", paddingLeft: "16px", lineHeight: "1.5" }}>
