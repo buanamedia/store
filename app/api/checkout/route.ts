@@ -6,25 +6,24 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
-// Header khusus untuk mengizinkan request dari Blogspot (CORS)
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const { productId, customerEmail, customerName } = body;
 
     if (!productId || !customerEmail || !customerName) {
       return NextResponse.json(
-        { success: false, message: "Parameter tidak lengkap" },
+        { success: false, message: "Parameter nama, email, atau productId tidak lengkap" },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -32,7 +31,7 @@ export async function POST(request: Request) {
     const productDoc = await db.collection("products").doc(productId).get();
     if (!productDoc.exists) {
       return NextResponse.json(
-        { success: false, message: "Produk tidak ditemukan di database" },
+        { success: false, message: "Produk tidak ditemukan di Firestore" },
         { status: 404, headers: corsHeaders }
       );
     }
@@ -72,9 +71,9 @@ export async function POST(request: Request) {
       { headers: corsHeaders }
     );
   } catch (error: any) {
-    console.error("Checkout Error:", error);
+    console.error("Checkout API Error:", error);
     return NextResponse.json(
-      { success: false, message: error.message || "Terjadi kesalahan server" },
+      { success: false, message: error.message || "Terjadi kesalahan internal server" },
       { status: 500, headers: corsHeaders }
     );
   }
