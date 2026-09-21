@@ -68,23 +68,105 @@ export async function GET(request: Request) {
       });
     }
 
-    // 3. Ambil data produk untuk file Telegram ID
+    // 3. Ambil data produk untuk telegramFileId
     const productDoc = await db.collection("products").doc(orderData.productId).get();
     const productData = productDoc.data();
     const telegramFileId = productData?.telegramFileId || "";
 
-    return NextResponse.json(
-      {
-        success: true,
-        invoiceNumber,
-        productName: orderData.productName,
-        customerEmail: orderData.customerEmail,
-        licenseKey,
-        status: "ACTIVE",
-        downloadUrl: `/api/download/${telegramFileId || "default"}`,
-      },
-      { headers: corsHeaders }
-    );
+    // 4. Render Tampilan HTML Rapi untuk Pembeli
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Akses Produk & Lisensi - STORE Engine</title>
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: #0f172a; 
+            color: #f8fafc; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px; 
+            box-sizing: border-box; 
+          }
+          .card { 
+            background: #1e293b; 
+            border: 1px solid #334155; 
+            border-radius: 16px; 
+            padding: 32px; 
+            max-width: 480px; 
+            width: 100%; 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); 
+            text-align: center; 
+          }
+          .badge { 
+            background: #10b981; 
+            color: #fff; 
+            padding: 6px 16px; 
+            border-radius: 99px; 
+            font-weight: bold; 
+            font-size: 0.85rem; 
+            display: inline-block; 
+            margin-bottom: 16px; 
+          }
+          h1 { font-size: 1.5rem; margin: 0 0 8px 0; color: #fff; }
+          p { color: #94a3b8; font-size: 0.95rem; margin: 0 0 24px 0; }
+          .license-title { text-align: left; margin-bottom: 8px; font-size: 0.85rem; color: #94a3b8; font-weight: 600; }
+          .license-box { 
+            background: #0f172a; 
+            border: 1px dashed #475569; 
+            border-radius: 8px; 
+            padding: 16px; 
+            font-family: monospace; 
+            font-size: 1.2rem; 
+            color: #38bdf8; 
+            letter-spacing: 1px; 
+            margin-bottom: 24px; 
+            word-break: break-all; 
+            user-select: all;
+          }
+          .btn-download { 
+            display: block; 
+            width: 100%; 
+            padding: 14px; 
+            background: #2563eb; 
+            color: #fff; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            font-size: 1rem; 
+            box-sizing: border-box; 
+            transition: background 0.2s; 
+          }
+          .btn-download:hover { background: #1d4ed8; }
+          .footer { margin-top: 24px; font-size: 0.8rem; color: #64748b; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <span class="badge">PEMBAYARAN BERHASIL</span>
+          <h1>${orderData.productName || "Digital Product"}</h1>
+          <p>Terima kasih! Pembelian Anda telah dikonfirmasi.</p>
+          
+          <div class="license-title">KODE LISENSI ANDA:</div>
+          <div class="license-box">${licenseKey}</div>
+          
+          <a href="/api/download/${telegramFileId || "default"}" class="btn-download">Unduh File Produk</a>
+          
+          <div class="footer">Invoice: ${invoiceNumber} | Email: ${orderData.customerEmail}</div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return new NextResponse(htmlContent, {
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
   } catch (error: any) {
     console.error("Access API Error:", error);
     return NextResponse.json(
