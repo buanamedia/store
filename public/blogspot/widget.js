@@ -1,5 +1,5 @@
 (function () {
-  const API_BASE_URL = "https://store.buanamedia.my.id";
+  const API_BASE_URL = "https://store-indol-seven.vercel.app";
 
   const style = document.createElement("style");
   style.innerHTML = `
