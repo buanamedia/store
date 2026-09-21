@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export async function GET(
   request: NextRequest,
@@ -18,7 +19,6 @@ export async function GET(
       );
     }
 
-    // 1. Minta File Path ke Telegram API
     const getPathUrl = `https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`;
     const pathRes = await fetch(getPathUrl);
     const pathData = await pathRes.json();
@@ -33,7 +33,6 @@ export async function GET(
     const filePath = pathData.result.file_path;
     const downloadUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
 
-    // 2. Fetch stream file dari Telegram
     const fileRes = await fetch(downloadUrl);
 
     if (!fileRes.ok) {
@@ -43,7 +42,6 @@ export async function GET(
       );
     }
 
-    // 3. Forward stream file langsung ke client
     const headers = new Headers();
     headers.set("Content-Type", fileRes.headers.get("Content-Type") || "application/octet-stream");
     headers.set("Content-Disposition", `attachment; filename="${filePath.split("/").pop()}"`);
