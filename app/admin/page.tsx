@@ -4,7 +4,7 @@ import React, { useState } from "react";
 
 export const dynamic = "force-dynamic";
 
-// Tempel URL Web App Google Apps Script Anda di sini (atau ambil dari env)
+// URL Web App Google Apps Script Anda
 const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx23eHNYQIgdnkZckezSsKvvmOaLqBYreIJRiQJbVZEN_71h6cRZO8LUrEskl2riK_G/exec"; 
 
 export default function AdminDashboardPage() {
@@ -14,6 +14,7 @@ export default function AdminDashboardPage() {
   // Data Products dari Database
   const [products, setProducts] = useState<any[]>([]);
   const [fetchingProducts, setFetchingProducts] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Form State untuk Tambah Produk
   const [id, setId] = useState("");
@@ -58,19 +59,33 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Fungsi helper membaca File menjadi Base64
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
         const result = reader.result as string;
-        // Ambil string base64 setelah koma (hilangkan header data:application/...)
         const base64 = result.split(",")[1];
         resolve(base64);
       };
       reader.onerror = (error) => reject(error);
     });
+  };
+
+  // Fungsi Copy Snippet Kode Blogspot
+  const copyBlogspotSnippet = (product: any) => {
+    const formattedPrice = Number(product.price || 0).toLocaleString("id-ID");
+    const snippet = `<!-- Script Widget STORE Engine -->
+<script src="https://undig.buanamedia.my.id/blogspot/widget.js"></script>
+
+<!-- Tombol Checkout (${product.name}) -->
+<button type="button" id="${product.id}" class="se-buy-btn" style="padding: 14px 28px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">
+  Beli ${product.name} - Rp ${formattedPrice}
+</button>`;
+
+    navigator.clipboard.writeText(snippet);
+    setCopiedId(product.id);
+    setTimeout(() => setCopiedId(null), 3000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,14 +96,13 @@ export default function AdminDashboardPage() {
     try {
       let finalTelegramFileId = "";
 
-      // 1. Jika Tipe DOWNLOAD & Ada File -> Unggah LANGSUNG ke Google Apps Script dari Browser
       if (type === "DOWNLOAD" && file) {
         setLoadingStatus("Mengunggah file ke Telegram via GAS...");
         const base64Data = await fileToBase64(file);
 
         const gasRes = await fetch(GAS_WEBAPP_URL, {
           method: "POST",
-          headers: { "Content-Type": "text/plain" }, // Gunakan text/plain untuk menghindari batasan CORS preflight GAS
+          headers: { "Content-Type": "text/plain" },
           body: JSON.stringify({
             secretKey: "gpfadmin123",
             fileName: file.name,
@@ -106,7 +120,6 @@ export default function AdminDashboardPage() {
         finalTelegramFileId = gasData.telegramFileId;
       }
 
-      // 2. Simpan Data Produk ke Firestore Vercel Backend
       setLoadingStatus("Menyimpan konfigurasi produk ke Firestore...");
       const res = await fetch("/api/admin/products", {
         method: "POST",
@@ -178,7 +191,7 @@ export default function AdminDashboardPage() {
         </div>
       ) : (
         /* Dashboard Admin Main View */
-        <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155" }}>
             <div>
               <h1 style={{ fontSize: "1.4rem", margin: 0, color: "#38bdf8" }}>STORE Engine Dashboard</h1>
@@ -208,7 +221,7 @@ export default function AdminDashboardPage() {
                       <th style={{ padding: "10px" }}>Harga</th>
                       <th style={{ padding: "10px" }}>Tipe</th>
                       <th style={{ padding: "10px" }}>Lisensi Mode</th>
-                      <th style={{ padding: "10px" }}>Detail File ID / URL</th>
+                      <th style={{ padding: "10px" }}>Aksi Blogspot</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -216,7 +229,7 @@ export default function AdminDashboardPage() {
                       <tr key={p.id} style={{ borderBottom: "1px solid #0f172a" }}>
                         <td style={{ padding: "10px", fontWeight: "bold", color: "#38bdf8" }}>{p.id}</td>
                         <td style={{ padding: "10px" }}>{p.name}</td>
-                        <td style={{ padding: "10px" }}>Rp {Number(p.price || 0).toLocaleString("id-ID")}</td>
+                        <td style={{ padding: "10px", color: "#10b981", fontWeight: "bold" }}>Rp {Number(p.price || 0).toLocaleString("id-ID")}</td>
                         <td style={{ padding: "10px" }}>
                           <span style={{ padding: "2px 8px", borderRadius: "4px", background: p.type === "ACCESS" ? "#065f46" : "#1e40af", color: "#fff", fontSize: "0.75rem" }}>
                             {p.type || "DOWNLOAD"}
@@ -225,8 +238,23 @@ export default function AdminDashboardPage() {
                         <td style={{ padding: "10px", color: "#cbd5e1" }}>
                           {p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
                         </td>
-                        <td style={{ padding: "10px", color: "#64748b", fontFamily: "monospace", fontSize: "0.75rem" }}>
-                          {p.type === "ACCESS" ? (p.appUrl || "-") : (p.telegramFileId ? `${p.telegramFileId.substring(0, 15)}...` : "Kosong")}
+                        <td style={{ padding: "10px" }}>
+                          <button
+                            onClick={() => copyBlogspotSnippet(p)}
+                            style={{
+                              background: copiedId === p.id ? "#10b981" : "#2563eb",
+                              color: "#fff",
+                              border: "none",
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              cursor: "pointer",
+                              fontSize: "0.75rem",
+                              fontWeight: "bold",
+                              transition: "background 0.2s"
+                            }}
+                          >
+                            {copiedId === p.id ? "✓ Tersalin!" : "📋 Copy Kode Blogspot"}
+                          </button>
                         </td>
                       </tr>
                     ))}
