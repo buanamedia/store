@@ -4,7 +4,7 @@ import React, { useState } from "react";
 
 export const dynamic = "force-dynamic";
 
-// Salin dan tempel URL Web App Google Apps Script Anda di bawah ini
+// URL Web App Google Apps Script Anda
 const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx23eHNYQIgdnkZckezSsKvvmOaLqBYreIJRiQJbVZEN_71h6cRZO8LUrEskl2riK_G/exec"; 
 
 export default function AdminDashboardPage() {
@@ -26,7 +26,11 @@ export default function AdminDashboardPage() {
   const [manualKeys, setManualKeys] = useState("");
   const [generatorApiUrl, setGeneratorApiUrl] = useState("");
   const [appUrl, setAppUrl] = useState("");
+  
+  // Modus Input File: "UPLOAD" (Direct GAS) atau "MANUAL_ID" (File Telegram Besar)
+  const [uploadMode, setUploadMode] = useState<"UPLOAD" | "MANUAL_ID">("UPLOAD");
   const [file, setFile] = useState<File | null>(null);
+  const [manualTelegramFileId, setManualTelegramFileId] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("");
@@ -72,7 +76,7 @@ export default function AdminDashboardPage() {
     });
   };
 
-  // Fungsi Copy Snippet Kode Blogspot
+  // Copy Snippet Kode Blogspot
   const copyBlogspotSnippet = (product: any) => {
     const formattedPrice = Number(product.price || 0).toLocaleString("id-ID");
     const snippet = `<!-- Script Widget STORE Engine -->
@@ -88,6 +92,30 @@ export default function AdminDashboardPage() {
     setTimeout(() => setCopiedId(null), 3000);
   };
 
+  // Fungsi Hapus Produk dari Firestore & Telegram
+  const handleDeleteProduct = async (productId: string, productName: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus produk '${productName}' (${productId}) dari database & Telegram?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/products?id=${encodeURIComponent(productId)}&password=${encodeURIComponent(adminPassword)}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        alert(`Produk '${productId}' berhasil dihapus!`);
+        loadProducts(adminPassword);
+      } else {
+        alert(`Gagal menghapus: ${data.message}`);
+      }
+    } catch (err: any) {
+      alert("Error saat menghapus produk: " + err.message);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -96,32 +124,34 @@ export default function AdminDashboardPage() {
     try {
       let finalTelegramFileId = "";
 
-      // 1. Direct Upload ke Google Apps Script jika tipe DOWNLOAD
-      if (type === "DOWNLOAD" && file) {
-        setLoadingStatus("Mengunggah file ke Telegram via GAS...");
-        const base64Data = await fileToBase64(file);
+      if (type === "DOWNLOAD") {
+        if (uploadMode === "UPLOAD" && file) {
+          setLoadingStatus("Mengunggah file ke Telegram via GAS...");
+          const base64Data = await fileToBase64(file);
 
-        const gasRes = await fetch(GAS_WEBAPP_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify({
-            secretKey: "gpfadmin123",
-            fileName: file.name,
-            category: "ZIP",
-            fileData: base64Data,
-          }),
-        });
+          const gasRes = await fetch(GAS_WEBAPP_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+              secretKey: "gpfadmin123",
+              fileName: file.name,
+              category: "ZIP",
+              fileData: base64Data,
+            }),
+          });
 
-        const gasData = await gasRes.json();
+          const gasData = await gasRes.json();
 
-        if (!gasData || !gasData.success) {
-          throw new Error("Gagal Unggah ke Telegram (GAS): " + (gasData?.message || "Error Tidak Diketahui"));
+          if (!gasData || !gasData.success) {
+            throw new Error("Gagal Unggah ke Telegram (GAS): " + (gasData?.message || "Error Tidak Diketahui"));
+          }
+
+          finalTelegramFileId = gasData.telegramFileId;
+        } else if (uploadMode === "MANUAL_ID") {
+          finalTelegramFileId = manualTelegramFileId.trim();
         }
-
-        finalTelegramFileId = gasData.telegramFileId;
       }
 
-      // 2. Pembersihan & Pembulatan Presisi Harga
       const cleanPriceInput = Math.round(parseFloat(price.toString().replace(/[^0-9.]/g, "")) || 0);
 
       setLoadingStatus("Menyimpan konfigurasi produk ke Firestore...");
@@ -132,7 +162,7 @@ export default function AdminDashboardPage() {
           adminPassword,
           id: id.trim().toLowerCase().replace(/\s+/g, "-"),
           name,
-          price: cleanPriceInput, // Mengirimkan harga integer bulat murni
+          price: cleanPriceInput,
           type,
           hasLicense,
           licenseMode,
@@ -148,7 +178,7 @@ export default function AdminDashboardPage() {
       if (res.ok && data.success) {
         setMessage({ 
           type: "success", 
-          text: `Berhasil! Produk '${id}' tersimpan & terunggah ke Telegram. File ID: ${finalTelegramFileId || "N/A"}` 
+          text: `Berhasil! Produk '${id}' tersimpan & siap digunakan. File ID: ${finalTelegramFileId || "N/A"}` 
         });
         setId("");
         setName("");
@@ -156,6 +186,7 @@ export default function AdminDashboardPage() {
         setAppUrl("");
         setManualKeys("");
         setGeneratorApiUrl("");
+        setManualTelegramFileId("");
         setFile(null);
         loadProducts(adminPassword);
       } else {
@@ -195,7 +226,7 @@ export default function AdminDashboardPage() {
         </div>
       ) : (
         /* Dashboard Admin Main View */
-        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+        <div style={{ maxWidth: "1050px", margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155" }}>
             <div>
               <h1 style={{ fontSize: "1.4rem", margin: 0, color: "#38bdf8" }}>STORE Engine Dashboard</h1>
@@ -225,7 +256,7 @@ export default function AdminDashboardPage() {
                       <th style={{ padding: "10px" }}>Harga</th>
                       <th style={{ padding: "10px" }}>Tipe</th>
                       <th style={{ padding: "10px" }}>Lisensi Mode</th>
-                      <th style={{ padding: "10px" }}>Aksi Blogspot</th>
+                      <th style={{ padding: "10px" }}>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -242,22 +273,36 @@ export default function AdminDashboardPage() {
                         <td style={{ padding: "10px", color: "#cbd5e1" }}>
                           {p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
                         </td>
-                        <td style={{ padding: "10px" }}>
+                        <td style={{ padding: "10px", display: "flex", gap: "8px" }}>
                           <button
                             onClick={() => copyBlogspotSnippet(p)}
                             style={{
                               background: copiedId === p.id ? "#10b981" : "#2563eb",
                               color: "#fff",
                               border: "none",
-                              padding: "6px 12px",
+                              padding: "6px 10px",
                               borderRadius: "6px",
                               cursor: "pointer",
                               fontSize: "0.75rem",
                               fontWeight: "bold",
-                              transition: "background 0.2s"
                             }}
                           >
-                            {copiedId === p.id ? "✓ Tersalin!" : "📋 Copy Kode Blogspot"}
+                            {copiedId === p.id ? "✓ Tersalin!" : "📋 Copy Code"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(p.id, p.name)}
+                            style={{
+                              background: "#ef4444",
+                              color: "#fff",
+                              border: "none",
+                              padding: "6px 10px",
+                              borderRadius: "6px",
+                              cursor: "pointer",
+                              fontSize: "0.75rem",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            🗑 Hapus
                           </button>
                         </td>
                       </tr>
@@ -401,14 +446,54 @@ export default function AdminDashboardPage() {
                   />
                 </div>
               ) : (
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "6px" }}>Unggah File Produk (Otomatis Direct ke Telegram via GAS)</label>
-                  <input
-                    type="file"
-                    required
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
-                  />
+                <div style={{ marginBottom: "20px", background: "#0f172a", padding: "16px", borderRadius: "8px", border: "1px solid #334155" }}>
+                  <label style={{ display: "block", fontSize: "0.85rem", color: "#38bdf8", marginBottom: "10px", fontWeight: "bold" }}>Metode Pemasok File Produk:</label>
+                  
+                  <div style={{ display: "flex", gap: "16px", marginBottom: "12px" }}>
+                    <label style={{ cursor: "pointer", fontSize: "0.85rem" }}>
+                      <input
+                        type="radio"
+                        name="uploadMode"
+                        checked={uploadMode === "UPLOAD"}
+                        onChange={() => setUploadMode("UPLOAD")}
+                        style={{ marginRight: "6px" }}
+                      />
+                      1. Unggah Langsung File Baru (via GAS)
+                    </label>
+                    <label style={{ cursor: "pointer", fontSize: "0.85rem" }}>
+                      <input
+                        type="radio"
+                        name="uploadMode"
+                        checked={uploadMode === "MANUAL_ID"}
+                        onChange={() => setUploadMode("MANUAL_ID")}
+                        style={{ marginRight: "6px" }}
+                      />
+                      2. Input Manual Telegram File ID (File Besar)
+                    </label>
+                  </div>
+
+                  {uploadMode === "UPLOAD" ? (
+                    <div>
+                      <input
+                        type="file"
+                        required={uploadMode === "UPLOAD"}
+                        onChange={(e) => setFile(e.target.files?.[0] || null)}
+                        style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="text"
+                        required={uploadMode === "MANUAL_ID"}
+                        placeholder="Tempel file_id Telegram di sini (contoh: BQACAg...)"
+                        value={manualTelegramFileId}
+                        onChange={(e) => setManualTelegramFileId(e.target.value)}
+                        style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
+                      />
+                      <small style={{ color: "#94a3b8", fontSize: "0.75rem", display: "block", marginTop: "4px" }}>Gunakan pilihan ini jika Anda telah mengunggah file besar langsung di Telegram Bot/Channel Anda.</small>
+                    </div>
+                  )}
                 </div>
               )}
 
