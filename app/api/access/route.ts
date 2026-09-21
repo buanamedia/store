@@ -44,61 +44,72 @@ export async function GET(request: Request) {
       );
     }
 
-    // 2. Cari / Buat Lisensi Terkait
-    const licenseSnapshot = await db
-      .collection("licenses")
-      .where("invoiceNumber", "==", invoiceNumber)
-      .limit(1)
-      .get();
-
-    let licenseKey = "";
-
-    if (!licenseSnapshot.empty) {
-      licenseKey = licenseSnapshot.docs[0].data().licenseKey;
-    } else {
-      licenseKey = `LIC-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      await db.collection("licenses").add({
-        licenseKey,
-        invoiceNumber,
-        customerEmail: orderData.customerEmail,
-        productId: orderData.productId,
-        status: "ACTIVE",
-        createdAt: new Date().toISOString(),
-      });
-    }
-
-    // 3. Ambil Detail Produk untuk Menentukan Tipe Tampilan
+    // 2. Ambil Detail Produk
     const productDoc = await db.collection("products").doc(orderData.productId).get();
     const productData = productDoc.data();
     
     // Tipe Produk: "DOWNLOAD" (default) atau "ACCESS"
     const productType = productData?.type || "DOWNLOAD"; 
+    // Boolean: Apakah produk ini membutuhkan lisensi? (Default: true)
+    const hasLicense = productData?.hasLicense !== false; 
     const telegramFileId = productData?.telegramFileId || "";
     const targetAppUrl = productData?.appUrl || "#";
 
-    // 4. Render Tombol Aksi Berdasarkan Tipe Produk
+    // 3. Kelola / Buat Lisensi Jika Memang Diperlukan
+    let licenseKey = "";
+    if (hasLicense) {
+      const licenseSnapshot = await db
+        .collection("licenses")
+        .where("invoiceNumber", "==", invoiceNumber)
+        .limit(1)
+        .get();
+
+      if (!licenseSnapshot.empty) {
+        licenseKey = licenseSnapshot.docs[0].data().licenseKey;
+      } else {
+        licenseKey = `LIC-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        await db.collection("licenses").add({
+          licenseKey,
+          invoiceNumber,
+          customerEmail: orderData.customerEmail,
+          productId: orderData.productId,
+          status: "ACTIVE",
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    // 4. Render Blok Tampilan Lisensi (Jika hasLicense === true)
+    const licenseHtml = hasLicense
+      ? `
+        <div class="license-title">KODE LISENSI ANDA:</div>
+        <div class="license-box">${licenseKey}</div>
+      `
+      : "";
+
+    // 5. Render Tombol Aksi Berdasarkan Tipe Produk
     let actionButtonHtml = "";
 
     if (productType === "ACCESS") {
       actionButtonHtml = `
         <a href="${targetAppUrl}" target="_blank" class="btn-action btn-access">Buka Aplikasi / Login</a>
-        <p class="instruction">Gunakan Kode Lisensi dan Email Anda untuk login ke dalam aplikasi.</p>
+        <p class="instruction">${hasLicense ? "Gunakan Kode Lisensi dan Email Anda untuk login ke dalam aplikasi." : "Silakan klik tombol di atas untuk mengakses aplikasi."}</p>
       `;
     } else {
       actionButtonHtml = `
-        <a href="/api/download/${telegramFileId || "default"}" class="btn-action btn-download">Unduh File Software</a>
-        <p class="instruction">Gunakan Kode Lisensi di atas saat menjalankan installer/aplikasi.</p>
+        <a href="/api/download/${telegramFileId || "default"}" class="btn-action btn-download">Unduh File Produk</a>
+        <p class="instruction">${hasLicense ? "Gunakan Kode Lisensi di atas saat menjalankan installer/aplikasi." : "Klik tombol di atas untuk mulai mengunduh file."}</p>
       `;
     }
 
-    // 5. Render Halaman HTML Rapi
+    // 6. Render Halaman HTML Rapi
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="id">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Akses Produk & Lisensi - STORE Engine</title>
+        <title>Akses Produk - STORE Engine</title>
         <style>
           body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
@@ -174,8 +185,7 @@ export async function GET(request: Request) {
           <h1>${orderData.productName || "Digital Product"}</h1>
           <p class="sub">Terima kasih! Pembelian Anda telah dikonfirmasi.</p>
           
-          <div class="license-title">KODE LISENSI ANDA:</div>
-          <div class="license-box">${licenseKey}</div>
+          ${licenseHtml}
           
           ${actionButtonHtml}
           
