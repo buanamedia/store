@@ -47,13 +47,24 @@
       background: transparent !important; border: none !important; color: #94a3b8 !important; float: right !important;
       font-size: 1.2rem !important; cursor: pointer !important;
     }
-    /* Styling Tambahan untuk Tombol Stok Habis */
+    
+    /* Styling Presisi untuk Tombol Stok Habis */
     .se-buy-btn.out-of-stock, [data-store-product].out-of-stock {
       background-color: #64748b !important;
-      color: #cbd5e1 !important;
+      color: #f1f5f9 !important;
       cursor: not-allowed !important;
-      opacity: 0.7 !important;
-      border: 1px solid #475569 !important;
+      opacity: 0.85 !important;
+      border: none !important;
+      border-radius: 8px !important;
+      height: 48px !important;
+      padding: 0 24px !important;
+      font-size: 15px !important;
+      font-weight: bold !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-sizing: border-box !important;
+      min-width: 160px !important;
     }
   `;
   document.head.appendChild(style);
