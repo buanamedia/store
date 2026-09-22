@@ -72,10 +72,10 @@ export default function ProductsAndTransactionsPage() {
       if (res.ok && data.success) {
         setTransactions(data.transactions || []);
       } else {
-        alert(data.message || "Gagal memuat daftar transaksi");
+        console.warn("Gagal memuat transaksi:", data.message);
       }
     } catch (e: any) {
-      alert("Error memuat transaksi: " + e.message);
+      console.error("Error memuat transaksi:", e.message);
     } finally {
       setLoadingTransactions(false);
     }
