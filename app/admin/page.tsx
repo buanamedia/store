@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 // URL Web App Google Apps Script Anda
-const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx23eHNYQIgdnkZckezSsKvvmOaLqBYreIJRiQJbVZEN_71h6cRZO8LUrEskl2riK_G/exec"; 
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx23eHNYQIgdnkZckezSsKvvmOaLqBYreIJRiQJbVZEN_71h6cRZO8LUrEskl2riK_G/exec";
 
 export default function AdminDashboardPage() {
   const [adminPassword, setAdminPassword] = useState("");
@@ -17,7 +18,6 @@ export default function AdminDashboardPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Form State untuk Tambah / Update Produk
-  const [isEditing, setIsEditing] = useState(false); // Penanda mode edit
   const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -27,7 +27,7 @@ export default function AdminDashboardPage() {
   const [manualKeys, setManualKeys] = useState("");
   const [generatorApiUrl, setGeneratorApiUrl] = useState("");
   const [appUrl, setAppUrl] = useState("");
-  
+
   // Modus Input File: "UPLOAD" (Direct GAS) atau "MANUAL_ID" (File Telegram Besar)
   const [uploadMode, setUploadMode] = useState<"UPLOAD" | "MANUAL_ID">("UPLOAD");
   const [file, setFile] = useState<File | null>(null);
@@ -77,23 +77,6 @@ export default function AdminDashboardPage() {
     });
   };
 
-  // Reset/Clear Form State
-  const resetForm = () => {
-    setIsEditing(false);
-    setId("");
-    setName("");
-    setPrice("");
-    setType("DOWNLOAD");
-    setHasLicense(true);
-    setLicenseMode("AUTO");
-    setAppUrl("");
-    setManualKeys("");
-    setGeneratorApiUrl("");
-    setUploadMode("UPLOAD");
-    setManualTelegramFileId("");
-    setFile(null);
-  };
-
   // Copy Snippet Kode Blogspot
   const copyBlogspotSnippet = (product: any) => {
     const formattedPrice = Number(product.price || 0).toLocaleString("id-ID");
@@ -108,70 +91,6 @@ export default function AdminDashboardPage() {
     navigator.clipboard.writeText(snippet);
     setCopiedId(product.id);
     setTimeout(() => setCopiedId(null), 3000);
-  };
-
-  // Fungsi Edit Cepat Harga Produk
-  const handleEditPrice = async (product: any) => {
-    const inputPrice = prompt(`Masukkan harga baru untuk produk '${product.name}' (Rp):`, product.price);
-    
-    if (inputPrice === null) return; // Batal jika pengguna menekan Cancel
-
-    const newPrice = parseInt(inputPrice.toString().replace(/\D/g, ""), 10);
-
-    if (isNaN(newPrice) || newPrice < 0) {
-      alert("Harga tidak valid!");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/admin/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          adminPassword,
-          ...product, // Mengirimkan ulang data produk eksis
-          price: newPrice, // Update harga baru
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        alert(`Harga produk '${product.name}' berhasil diubah menjadi Rp ${newPrice.toLocaleString("id-ID")}!`);
-        loadProducts(adminPassword);
-      } else {
-        alert(`Gagal merubah harga: ${data.message}`);
-      }
-    } catch (err: any) {
-      alert("Error saat merubah harga: " + err.message);
-    }
-  };
-
-  // Fungsi Edit Seluruh Data Produk (Mengisi ulang Form)
-  const handleEditFullProduct = (product: any) => {
-    setIsEditing(true);
-    setId(product.id || "");
-    setName(product.name || "");
-    setPrice(product.price ? product.price.toString() : "");
-    setType(product.type || "DOWNLOAD");
-    setHasLicense(product.hasLicense !== false);
-    setLicenseMode(product.licenseMode || "AUTO");
-    setManualKeys(product.manualKeys || "");
-    setGeneratorApiUrl(product.generatorApiUrl || "");
-    setAppUrl(product.appUrl || "");
-    
-    if (product.telegramFileId) {
-      setUploadMode("MANUAL_ID");
-      setManualTelegramFileId(product.telegramFileId);
-    } else {
-      setUploadMode("UPLOAD");
-      setManualTelegramFileId("");
-    }
-    
-    setFile(null);
-    
-    // Scroll otomatis ke area form
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   };
 
   // Fungsi Hapus Produk dari Firestore & Telegram
@@ -204,7 +123,7 @@ export default function AdminDashboardPage() {
     setMessage(null);
 
     try {
-      let finalTelegramFileId = manualTelegramFileId.trim();
+      let finalTelegramFileId = "";
 
       if (type === "DOWNLOAD") {
         if (uploadMode === "UPLOAD" && file) {
@@ -234,7 +153,7 @@ export default function AdminDashboardPage() {
         }
       }
 
-      const cleanPriceInput = parseInt(price.toString().replace(/\D/g, ""), 10) || 0;
+      const cleanPriceInput = Math.round(parseFloat(price.toString().replace(/[^0-9.]/g, "")) || 0);
 
       setLoadingStatus("Menyimpan konfigurasi produk ke Firestore...");
       const res = await fetch("/api/admin/products", {
@@ -258,11 +177,18 @@ export default function AdminDashboardPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setMessage({ 
-          type: "success", 
-          text: `Berhasil! Produk '${id}' tersimpan & siap digunakan. File ID: ${finalTelegramFileId || "N/A"}` 
+        setMessage({
+          type: "success",
+          text: `Berhasil! Produk '${id}' tersimpan & siap digunakan. File ID: ${finalTelegramFileId || "N/A"}`
         });
-        resetForm();
+        setId("");
+        setName("");
+        setPrice("");
+        setAppUrl("");
+        setManualKeys("");
+        setGeneratorApiUrl("");
+        setManualTelegramFileId("");
+        setFile(null);
         loadProducts(adminPassword);
       } else {
         setMessage({ type: "error", text: data.message || "Gagal menyimpan produk." });
@@ -277,6 +203,14 @@ export default function AdminDashboardPage() {
 
   return (
     <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", padding: "40px 20px", fontFamily: "sans-serif" }}>
+      <style>{`
+        * { box-sizing: border-box; }
+        table { border-collapse: collapse !important; width: 100% !important; }
+        td, th { vertical-align: middle !important; white-space: nowrap !important; }
+        button { display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important; min-height: 32px !important; }
+        a { text-decoration: none !important; }
+      `}</style>
+
       {!isAuthenticated ? (
         /* Layar Login Admin */
         <div style={{ maxWidth: "400px", width: "100%", margin: "80px auto 0 auto", background: "#1e293b", padding: "32px", borderRadius: "16px", border: "1px solid #334155", textAlign: "center" }}>
@@ -302,12 +236,38 @@ export default function AdminDashboardPage() {
       ) : (
         /* Dashboard Admin Main View */
         <div style={{ maxWidth: "1050px", margin: "0 auto" }}>
+          {/* HEADER DENGAN TOMBOL HOME, PANDUAN, & LOGOUT */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155" }}>
             <div>
               <h1 style={{ fontSize: "1.4rem", margin: 0, color: "#38bdf8" }}>STORE Engine Dashboard</h1>
               <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>buanamedia.my.id</span>
             </div>
-            <button onClick={() => setIsAuthenticated(false)} style={{ background: "#ef4444", border: "none", color: "#fff", padding: "8px 16px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "0.85rem" }}>Logout</button>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              {/* TOMBOL HOME KE BUANAMEDIA.MY.ID */}
+              <a
+                href="https://buanamedia.my.id"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ background: "#334155", color: "#f8fafc", padding: "8px 14px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
+              >
+                🏠 Home
+              </a>
+              {/* TOMBOL PANDUAN KE /ADMIN/GUIDE */}
+              <Link
+                href="/admin/guide"
+                style={{ background: "#0284c7", color: "#fff", padding: "8px 14px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
+              >
+                📖 Panduan
+              </Link>
+              {/* TOMBOL LOGOUT */}
+              <button
+                type="button"
+                onClick={() => setIsAuthenticated(false)}
+                style={{ background: "#ef4444", border: "none", color: "#fff", padding: "8px 14px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "0.85rem" }}
+              >
+                Logout
+              </button>
+            </div>
           </div>
 
           {/* TABEL DAFTAR PRODUK */}
@@ -331,58 +291,27 @@ export default function AdminDashboardPage() {
                       <th style={{ padding: "12px 10px" }}>Harga</th>
                       <th style={{ padding: "12px 10px" }}>Tipe</th>
                       <th style={{ padding: "12px 10px" }}>Lisensi Mode</th>
-                      <th style={{ padding: "12px 10px", textAlign: "right" }}>Aksi</th>
+                      <th style={{ padding: "12px 10px" }}>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {products.map((p) => (
-                      <tr key={p.id} style={{ borderBottom: "1px solid #334155" }}>
-                        <td style={{ padding: "12px 10px", fontWeight: "bold", color: "#38bdf8", verticalAlign: "middle" }}>{p.id}</td>
-                        <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>{p.name}</td>
-                        <td style={{ padding: "12px 10px", color: "#10b981", fontWeight: "bold", verticalAlign: "middle" }}>Rp {Number(p.price || 0).toLocaleString("id-ID")}</td>
-                        <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
-                          <span style={{ padding: "4px 8px", borderRadius: "4px", background: p.type === "ACCESS" ? "#065f46" : "#1e40af", color: "#fff", fontSize: "0.75rem", fontWeight: "600", display: "inline-block" }}>
+                      <tr key={p.id} style={{ borderBottom: "1px solid #0f172a" }}>
+                        <td style={{ padding: "12px 10px", fontWeight: "bold", color: "#38bdf8" }}>{p.id}</td>
+                        <td style={{ padding: "12px 10px" }}>{p.name}</td>
+                        <td style={{ padding: "12px 10px", color: "#10b981", fontWeight: "bold" }}>Rp {Number(p.price || 0).toLocaleString("id-ID")}</td>
+                        <td style={{ padding: "12px 10px" }}>
+                          <span style={{ padding: "4px 8px", borderRadius: "4px", background: p.type === "ACCESS" ? "#065f46" : "#1e40af", color: "#fff", fontSize: "0.75rem" }}>
                             {p.type || "DOWNLOAD"}
                           </span>
                         </td>
-                        <td style={{ padding: "12px 10px", color: "#cbd5e1", verticalAlign: "middle" }}>
+                        <td style={{ padding: "12px 10px", color: "#cbd5e1" }}>
                           {p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
                         </td>
-                        <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
-                          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                        <td style={{ padding: "12px 10px" }}>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                             <button
-                              onClick={() => handleEditFullProduct(p)}
-                              style={{
-                                background: "#0284c7",
-                                color: "#fff",
-                                border: "none",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "0.75rem",
-                                fontWeight: "bold",
-                                whiteSpace: "nowrap"
-                              }}
-                            >
-                              ✏️ Edit Lengkap
-                            </button>
-                            <button
-                              onClick={() => handleEditPrice(p)}
-                              style={{
-                                background: "#f59e0b",
-                                color: "#fff",
-                                border: "none",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "0.75rem",
-                                fontWeight: "bold",
-                                whiteSpace: "nowrap"
-                              }}
-                            >
-                              💰 Edit Harga
-                            </button>
-                            <button
+                              type="button"
                               onClick={() => copyBlogspotSnippet(p)}
                               style={{
                                 background: copiedId === p.id ? "#10b981" : "#2563eb",
@@ -393,12 +322,12 @@ export default function AdminDashboardPage() {
                                 cursor: "pointer",
                                 fontSize: "0.75rem",
                                 fontWeight: "bold",
-                                whiteSpace: "nowrap"
                               }}
                             >
                               {copiedId === p.id ? "✓ Tersalin!" : "📋 Copy Code"}
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleDeleteProduct(p.id, p.name)}
                               style={{
                                 background: "#ef4444",
@@ -409,7 +338,6 @@ export default function AdminDashboardPage() {
                                 cursor: "pointer",
                                 fontSize: "0.75rem",
                                 fontWeight: "bold",
-                                whiteSpace: "nowrap"
                               }}
                             >
                               🗑 Hapus
@@ -426,20 +354,7 @@ export default function AdminDashboardPage() {
 
           {/* FORM TAMBAH / UPDATE PRODUK */}
           <div style={{ background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid #334155" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#f8fafc" }}>
-                {isEditing ? `Edit Produk: ${id}` : "Tambah / Update Produk Baru"}
-              </h2>
-              {isEditing && (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  style={{ background: "#475569", color: "#fff", border: "none", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem" }}
-                >
-                  Batal Edit
-                </button>
-              )}
-            </div>
+            <h2 style={{ fontSize: "1.1rem", margin: "0 0 16px 0", color: "#f8fafc" }}>Tambah / Update Produk Baru</h2>
 
             {message && (
               <div style={{
@@ -461,20 +376,10 @@ export default function AdminDashboardPage() {
                 <input
                   type="text"
                   required
-                  readOnly={isEditing}
                   placeholder="contoh: clipprovit-pro atau saas-tool"
                   value={id}
                   onChange={(e) => setId(e.target.value)}
-                  style={{ 
-                    width: "100%", 
-                    padding: "10px 12px", 
-                    borderRadius: "8px", 
-                    border: "1px solid #475569", 
-                    background: isEditing ? "#334155" : "#0f172a", 
-                    color: isEditing ? "#94a3b8" : "#fff", 
-                    boxSizing: "border-box",
-                    cursor: isEditing ? "not-allowed" : "text"
-                  }}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
                 />
               </div>
 
@@ -486,7 +391,7 @@ export default function AdminDashboardPage() {
                   placeholder="contoh: ClipProvit Software License"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
                 />
               </div>
 
@@ -498,7 +403,7 @@ export default function AdminDashboardPage() {
                   placeholder="10000"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
                 />
               </div>
 
@@ -507,7 +412,7 @@ export default function AdminDashboardPage() {
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
                 >
                   <option value="DOWNLOAD">File Download / Software Installer</option>
                   <option value="ACCESS">Akses Portal Web / Aplikasi / SaaS</option>
@@ -515,12 +420,12 @@ export default function AdminDashboardPage() {
               </div>
 
               <div style={{ marginBottom: "16px" }}>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#e2e8f0", fontSize: "0.9rem" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", color: "#e2e8f0" }}>
                   <input
                     type="checkbox"
                     checked={hasLicense}
                     onChange={(e) => setHasLicense(e.target.checked)}
-                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                    style={{ width: "18px", height: "18px" }}
                   />
                   Gunakan Kode Lisensi Unik?
                 </label>
@@ -532,7 +437,7 @@ export default function AdminDashboardPage() {
                   <select
                     value={licenseMode}
                     onChange={(e) => setLicenseMode(e.target.value)}
-                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", marginBottom: licenseMode !== "AUTO" ? "12px" : "0" }}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", marginBottom: "12px" }}
                   >
                     <option value="AUTO">1. Generate Otomatis (Default STORE Engine)</option>
                     <option value="MANUAL">2. Input Manual Serial Key (Stok Lisensi Saya)</option>
@@ -560,7 +465,7 @@ export default function AdminDashboardPage() {
                         placeholder="https://api.keygen-anda.com/generate"
                         value={generatorApiUrl}
                         onChange={(e) => setGeneratorApiUrl(e.target.value)}
-                        style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
                       />
                     </div>
                   )}
@@ -576,31 +481,31 @@ export default function AdminDashboardPage() {
                     placeholder="https://app.buanamedia.my.id"
                     value={appUrl}
                     onChange={(e) => setAppUrl(e.target.value)}
-                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
                   />
                 </div>
               ) : (
                 <div style={{ marginBottom: "20px", background: "#0f172a", padding: "16px", borderRadius: "8px", border: "1px solid #334155" }}>
-                  <label style={{ display: "block", fontSize: "0.85rem", color: "#38bdf8", marginBottom: "12px", fontWeight: "bold" }}>Metode Pemasok File Produk:</label>
-                  
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "14px" }}>
-                    <label style={{ cursor: "pointer", fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                  <label style={{ display: "block", fontSize: "0.85rem", color: "#38bdf8", marginBottom: "10px", fontWeight: "bold" }}>Metode Pemasokan File Produk:</label>
+
+                  <div style={{ display: "flex", gap: "16px", marginBottom: "12px" }}>
+                    <label style={{ cursor: "pointer", fontSize: "0.85rem" }}>
                       <input
                         type="radio"
                         name="uploadMode"
                         checked={uploadMode === "UPLOAD"}
                         onChange={() => setUploadMode("UPLOAD")}
-                        style={{ cursor: "pointer" }}
+                        style={{ marginRight: "6px" }}
                       />
                       1. Unggah Langsung File Baru (via GAS)
                     </label>
-                    <label style={{ cursor: "pointer", fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                    <label style={{ cursor: "pointer", fontSize: "0.85rem" }}>
                       <input
                         type="radio"
                         name="uploadMode"
                         checked={uploadMode === "MANUAL_ID"}
                         onChange={() => setUploadMode("MANUAL_ID")}
-                        style={{ cursor: "pointer" }}
+                        style={{ marginRight: "6px" }}
                       />
                       2. Input Manual Telegram File ID (File Besar)
                     </label>
@@ -610,15 +515,10 @@ export default function AdminDashboardPage() {
                     <div>
                       <input
                         type="file"
-                        required={uploadMode === "UPLOAD" && !isEditing}
+                        required={uploadMode === "UPLOAD"}
                         onChange={(e) => setFile(e.target.files?.[0] || null)}
                         style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
                       />
-                      {isEditing && (
-                        <small style={{ color: "#94a3b8", fontSize: "0.75rem", display: "block", marginTop: "4px" }}>
-                          Biarkan kosong jika tidak ingin mengganti file eksis.
-                        </small>
-                      )}
                     </div>
                   ) : (
                     <div>
@@ -628,9 +528,17 @@ export default function AdminDashboardPage() {
                         placeholder="Tempel file_id Telegram di sini (contoh: BQACAg...)"
                         value={manualTelegramFileId}
                         onChange={(e) => setManualTelegramFileId(e.target.value)}
-                        style={{ width: "100%", padding: "10px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
+                        style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
                       />
-                      <small style={{ color: "#94a3b8", fontSize: "0.75rem", display: "block", marginTop: "6px" }}>Gunakan pilihan ini jika Anda telah mengunggah file besar langsung di Telegram Bot/Channel Anda.</small>
+                      {/* PANDUAN PENGAMBILAN TELEGRAM FILE ID */}
+                      <div style={{ background: "#1e293b", border: "1px solid #334155", padding: "10px 12px", borderRadius: "6px", marginTop: "8px", fontSize: "0.75rem", color: "#94a3b8" }}>
+                        <strong style={{ color: "#38bdf8" }}>Cara Ambil Telegram File ID (File Besar):</strong>
+                        <ol style={{ margin: "4px 0 0 0", paddingLeft: "16px", lineHeight: "1.5" }}>
+                          <li>Kirim file aplikasi berukuran besar langsung ke Bot Telegram Anda.</li>
+                          <li>Buka browser dan akses: <code style={{ color: "#f1f5f9" }}>https://api.telegram.org/bot8866448027:AAGnI1f00nwAk0LF9Ge5mYlXVi_mJQoVnk8/getUpdates</code></li>
+                          <li>Cari teks <code style={{ color: "#f1f5f9" }}>"file_id"</code> pada objek dokumen, lalu salin kodenya dan tempelkan di kolom atas.</li>
+                        </ol>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -642,7 +550,7 @@ export default function AdminDashboardPage() {
                 style={{
                   width: "100%",
                   padding: "14px",
-                  background: isEditing ? "#0284c7" : "#2563eb",
+                  background: "#2563eb",
                   color: "#fff",
                   border: "none",
                   borderRadius: "8px",
@@ -650,10 +558,9 @@ export default function AdminDashboardPage() {
                   fontSize: "1rem",
                   cursor: loading ? "not-allowed" : "pointer",
                   opacity: loading ? 0.7 : 1,
-                  transition: "background 0.2s"
                 }}
               >
-                {loading ? (loadingStatus || "Memproses...") : isEditing ? "Perbarui Produk Di Database" : "Simpan Produk Ke Database"}
+                {loading ? (loadingStatus || "Memproses...") : "Simpan Produk Ke Database"}
               </button>
             </form>
           </div>
