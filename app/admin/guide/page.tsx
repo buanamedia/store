@@ -23,7 +23,7 @@ export default function AdminGuidePage() {
             <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Dokumentasi & Petunjuk Penggunaan</span>
           </div>
           <Link href="/admin" style={{ background: "#2563eb", color: "#fff", padding: "8px 16px", borderRadius: "6px", fontWeight: "bold", fontSize: "0.85rem" }}>
-            ← Kembali ke Dashboard
+            ← Dashboard
           </Link>
         </div>
 
