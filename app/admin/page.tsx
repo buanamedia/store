@@ -555,9 +555,9 @@ export default function AdminDashboardPage() {
                       <div style={{ background: "#1e293b", border: "1px solid #334155", padding: "10px 12px", borderRadius: "6px", marginTop: "8px", fontSize: "0.75rem", color: "#94a3b8" }}>
                         <strong style={{ color: "#38bdf8" }}>Cara Ambil Telegram File ID (File Besar):</strong>
                         <ol style={{ margin: "4px 0 0 0", paddingLeft: "16px", lineHeight: "1.5" }}>
-                          <li>Kirim file aplikasi berukuran besar langsung ke Bot Telegram Anda.</li>
-                          <li>Buka browser dan akses: <code style={{ color: "#f1f5f9" }}>https://api.telegram.org/bot8366582148:AAH82q0GljNWjDxYE4JYAriWXlZesVo1u4c/getUpdates</code></li>
-                          <li>Cari teks <code style={{ color: "#f1f5f9" }}>"file_id"</code> pada objek dokumen, lalu salin kodenya dan tempelkan di kolom atas.</li>
+                          <li>Kirim file aplikasi berukuran besar ke Grup Telegram Anda.</li>
+                          <li>Forward (Teruskan) file tersebut ke bot pembantu: <code style={{ color: "#f1f5f9" }}>@ShowJsonBot</code> atau <code style={{ color: "#f1f5f9" }}>@FileIdBot</code>.</li>
+                          <li>Salin kode string <code style={{ color: "#f1f5f9" }}>"file_id"</code> yang diberikan, lalu tempelkan pada kolom di atas.</li>
                         </ol>
                       </div>
                     </div>
