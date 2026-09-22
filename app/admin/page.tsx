@@ -17,6 +17,7 @@ export default function AdminDashboardPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Form State untuk Tambah / Update Produk
+  const [isEditing, setIsEditing] = useState(false); // Penanda mode edit
   const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -76,6 +77,23 @@ export default function AdminDashboardPage() {
     });
   };
 
+  // Reset/Clear Form State
+  const resetForm = () => {
+    setIsEditing(false);
+    setId("");
+    setName("");
+    setPrice("");
+    setType("DOWNLOAD");
+    setHasLicense(true);
+    setLicenseMode("AUTO");
+    setAppUrl("");
+    setManualKeys("");
+    setGeneratorApiUrl("");
+    setUploadMode("UPLOAD");
+    setManualTelegramFileId("");
+    setFile(null);
+  };
+
   // Copy Snippet Kode Blogspot
   const copyBlogspotSnippet = (product: any) => {
     const formattedPrice = Number(product.price || 0).toLocaleString("id-ID");
@@ -92,7 +110,7 @@ export default function AdminDashboardPage() {
     setTimeout(() => setCopiedId(null), 3000);
   };
 
-  // Fungsi Edit Harga Produk
+  // Fungsi Edit Cepat Harga Produk
   const handleEditPrice = async (product: any) => {
     const inputPrice = prompt(`Masukkan harga baru untuk produk '${product.name}' (Rp):`, product.price);
     
@@ -129,6 +147,33 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Fungsi Edit Seluruh Data Produk (Mengisi ulang Form)
+  const handleEditFullProduct = (product: any) => {
+    setIsEditing(true);
+    setId(product.id || "");
+    setName(product.name || "");
+    setPrice(product.price ? product.price.toString() : "");
+    setType(product.type || "DOWNLOAD");
+    setHasLicense(product.hasLicense !== false);
+    setLicenseMode(product.licenseMode || "AUTO");
+    setManualKeys(product.manualKeys || "");
+    setGeneratorApiUrl(product.generatorApiUrl || "");
+    setAppUrl(product.appUrl || "");
+    
+    if (product.telegramFileId) {
+      setUploadMode("MANUAL_ID");
+      setManualTelegramFileId(product.telegramFileId);
+    } else {
+      setUploadMode("UPLOAD");
+      setManualTelegramFileId("");
+    }
+    
+    setFile(null);
+    
+    // Scroll otomatis ke area form
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  };
+
   // Fungsi Hapus Produk dari Firestore & Telegram
   const handleDeleteProduct = async (productId: string, productName: string) => {
     if (!confirm(`Apakah Anda yakin ingin menghapus produk '${productName}' (${productId}) dari database & Telegram?`)) {
@@ -159,7 +204,7 @@ export default function AdminDashboardPage() {
     setMessage(null);
 
     try {
-      let finalTelegramFileId = "";
+      let finalTelegramFileId = manualTelegramFileId.trim();
 
       if (type === "DOWNLOAD") {
         if (uploadMode === "UPLOAD" && file) {
@@ -217,14 +262,7 @@ export default function AdminDashboardPage() {
           type: "success", 
           text: `Berhasil! Produk '${id}' tersimpan & siap digunakan. File ID: ${finalTelegramFileId || "N/A"}` 
         });
-        setId("");
-        setName("");
-        setPrice("");
-        setAppUrl("");
-        setManualKeys("");
-        setGeneratorApiUrl("");
-        setManualTelegramFileId("");
-        setFile(null);
+        resetForm();
         loadProducts(adminPassword);
       } else {
         setMessage({ type: "error", text: data.message || "Gagal menyimpan produk." });
@@ -311,7 +349,23 @@ export default function AdminDashboardPage() {
                           {p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
                         </td>
                         <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
-                          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                            <button
+                              onClick={() => handleEditFullProduct(p)}
+                              style={{
+                                background: "#0284c7",
+                                color: "#fff",
+                                border: "none",
+                                padding: "6px 12px",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.75rem",
+                                fontWeight: "bold",
+                                whiteSpace: "nowrap"
+                              }}
+                            >
+                              ✏️ Edit Lengkap
+                            </button>
                             <button
                               onClick={() => handleEditPrice(p)}
                               style={{
@@ -326,7 +380,7 @@ export default function AdminDashboardPage() {
                                 whiteSpace: "nowrap"
                               }}
                             >
-                              ✏️ Edit Harga
+                              💰 Edit Harga
                             </button>
                             <button
                               onClick={() => copyBlogspotSnippet(p)}
@@ -372,7 +426,20 @@ export default function AdminDashboardPage() {
 
           {/* FORM TAMBAH / UPDATE PRODUK */}
           <div style={{ background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid #334155" }}>
-            <h2 style={{ fontSize: "1.1rem", margin: "0 0 16px 0", color: "#f8fafc" }}>Tambah / Update Produk Baru</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#f8fafc" }}>
+                {isEditing ? `Edit Produk: ${id}` : "Tambah / Update Produk Baru"}
+              </h2>
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  style={{ background: "#475569", color: "#fff", border: "none", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem" }}
+                >
+                  Batal Edit
+                </button>
+              )}
+            </div>
 
             {message && (
               <div style={{
@@ -394,10 +461,20 @@ export default function AdminDashboardPage() {
                 <input
                   type="text"
                   required
+                  readOnly={isEditing}
                   placeholder="contoh: clipprovit-pro atau saas-tool"
                   value={id}
                   onChange={(e) => setId(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
+                  style={{ 
+                    width: "100%", 
+                    padding: "10px 12px", 
+                    borderRadius: "8px", 
+                    border: "1px solid #475569", 
+                    background: isEditing ? "#334155" : "#0f172a", 
+                    color: isEditing ? "#94a3b8" : "#fff", 
+                    boxSizing: "border-box",
+                    cursor: isEditing ? "not-allowed" : "text"
+                  }}
                 />
               </div>
 
@@ -533,10 +610,15 @@ export default function AdminDashboardPage() {
                     <div>
                       <input
                         type="file"
-                        required={uploadMode === "UPLOAD"}
+                        required={uploadMode === "UPLOAD" && !isEditing}
                         onChange={(e) => setFile(e.target.files?.[0] || null)}
                         style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
                       />
+                      {isEditing && (
+                        <small style={{ color: "#94a3b8", fontSize: "0.75rem", display: "block", marginTop: "4px" }}>
+                          Biarkan kosong jika tidak ingin mengganti file eksis.
+                        </small>
+                      )}
                     </div>
                   ) : (
                     <div>
@@ -560,7 +642,7 @@ export default function AdminDashboardPage() {
                 style={{
                   width: "100%",
                   padding: "14px",
-                  background: "#2563eb",
+                  background: isEditing ? "#0284c7" : "#2563eb",
                   color: "#fff",
                   border: "none",
                   borderRadius: "8px",
@@ -571,7 +653,7 @@ export default function AdminDashboardPage() {
                   transition: "background 0.2s"
                 }}
               >
-                {loading ? (loadingStatus || "Memproses...") : "Simpan Produk Ke Database"}
+                {loading ? (loadingStatus || "Memproses...") : isEditing ? "Perbarui Produk Di Database" : "Simpan Produk Ke Database"}
               </button>
             </form>
           </div>
