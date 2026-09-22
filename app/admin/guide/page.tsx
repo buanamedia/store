@@ -10,7 +10,7 @@ export default function AdminGuidePage() {
     <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", padding: "40px 20px", fontFamily: "sans-serif" }}>
       <style>{`
         * { box-sizing: border-box; }
-        code { background: #0f172a; color: #38bdf8; padding: 2px 6px; borderRadius: 4px; font-family: monospace; font-size: 0.85em; border: 1px solid #334155; }
+        code { background: #0f172a; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; border: 1px solid #334155; }
         a { color: #38bdf8; text-decoration: none; }
         a:hover { text-decoration: underline; }
       `}</style>
@@ -70,10 +70,17 @@ export default function AdminGuidePage() {
             </p>
             <ol style={{ color: "#94a3b8", fontSize: "0.875rem", paddingLeft: "20px", lineHeight: "1.8" }}>
               <li>Kirimkan file installer/aplikasi berukuran besar langsung ke Chat / Group Bot Telegram Anda.</li>
-              <li>Buka browser dan akses tautan berikut:
-                <br />
-                <code>https://api.telegram.org/bot8866448027:AAGnI1f00nwAk0LF9Ge5mYlXVi_mJQoVnk8/getUpdates</code>
-              </li>
+              <li>
+  Buka browser dan akses:{" "}
+  <a
+    href="https://api.telegram.org/bot8866448027:AAGnI1f00nwAk0LF9Ge5mYlXVi_mJQoVnk8/getUpdates"
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{ color: "#38bdf8", wordBreak: "break-all" }}
+  >
+    https://api.telegram.org/bot8866448027:AAGnI1f00nwAk0LF9Ge5mYlXVi_mJQoVnk8/getUpdates
+  </a>
+</li>
               <li>Cari objek respon JSON terbaru, lalu temukan teks <code>"file_id"</code> di dalam bagian <code>"document"</code>.
                 <br />
                 <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Contoh teks: <code>"file_id": "BQACAgUAAxkBAAIB..."</code></span>
