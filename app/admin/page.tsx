@@ -80,13 +80,7 @@ export default function AdminDashboardPage() {
   // Copy Snippet Kode Blogspot
   const copyBlogspotSnippet = (product: any) => {
     const formattedPrice = Number(product.price || 0).toLocaleString("id-ID");
-    const snippet = `<!-- Script Widget STORE Engine -->
-<script src="https://undig.buanamedia.my.id/blogspot/widget.js"></script>
-
-<!-- Tombol Checkout (${product.name}) -->
-<button type="button" id="${product.id}" class="se-buy-btn" style="padding: 14px 28px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">
-  Beli ${product.name} - Rp ${formattedPrice}
-</button>`;
+    const snippet = `<!-- Script Widget STORE Engine -->\n<script src="https://undig.buanamedia.my.id/blogspot/widget.js"></script>\n\n<!-- Tombol Checkout (${product.name}) -->\n<button type="button" id="${product.id}" class="se-buy-btn" style="padding: 14px 28px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">\n  Beli ${product.name} - Rp ${formattedPrice}\n</button>`;
 
     navigator.clipboard.writeText(snippet);
     setCopiedId(product.id);
@@ -212,7 +206,6 @@ export default function AdminDashboardPage() {
       `}</style>
 
       {!isAuthenticated ? (
-        /* Layar Login Admin */
         <div style={{ maxWidth: "400px", width: "100%", margin: "80px auto 0 auto", background: "#1e293b", padding: "32px", borderRadius: "16px", border: "1px solid #334155", textAlign: "center" }}>
           <h2 style={{ color: "#38bdf8", marginTop: 0 }}>STORE Admin Login</h2>
           <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginBottom: "24px" }}>Masukkan Password Admin Vercel Anda untuk melanjutkan.</p>
@@ -234,16 +227,13 @@ export default function AdminDashboardPage() {
           </form>
         </div>
       ) : (
-        /* Dashboard Admin Main View */
         <div style={{ maxWidth: "1050px", margin: "0 auto" }}>
-          {/* HEADER DENGAN TOMBOL HOME, PANDUAN, & LOGOUT */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155" }}>
             <div>
               <h1 style={{ fontSize: "1.4rem", margin: 0, color: "#38bdf8" }}>STORE Engine Dashboard</h1>
               <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>buanamedia.my.id</span>
             </div>
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              {/* TOMBOL HOME KE BUANAMEDIA.MY.ID */}
               <a
                 href="https://buanamedia.my.id"
                 target="_blank"
@@ -252,14 +242,12 @@ export default function AdminDashboardPage() {
               >
                 🏠 Home
               </a>
-              {/* TOMBOL PANDUAN KE /ADMIN/GUIDE */}
               <Link
                 href="/admin/guide"
                 style={{ background: "#0284c7", color: "#fff", padding: "8px 14px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
               >
                 📖 Panduan
               </Link>
-              {/* TOMBOL LOGOUT */}
               <button
                 type="button"
                 onClick={() => setIsAuthenticated(false)}
@@ -270,7 +258,6 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* TABEL DAFTAR PRODUK */}
           <div style={{ background: "#1e293b", padding: "24px", borderRadius: "16px", border: "1px solid #334155", marginBottom: "32px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#f8fafc" }}>Daftar Produk di Database ({products.length})</h2>
@@ -352,7 +339,6 @@ export default function AdminDashboardPage() {
             )}
           </div>
 
-          {/* FORM TAMBAH / UPDATE PRODUK */}
           <div style={{ background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid #334155" }}>
             <h2 style={{ fontSize: "1.1rem", margin: "0 0 16px 0", color: "#f8fafc" }}>Tambah / Update Produk Baru</h2>
 
@@ -449,7 +435,7 @@ export default function AdminDashboardPage() {
                       <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Daftar Serial Key (Pisahkan dengan baris baru / koma):</label>
                       <textarea
                         rows={4}
-                        placeholder={"CLIP-KEY-111\nCLIP-KEY-222\nCLIP-KEY-333"}
+                        placeholder="CLIP-KEY-111&#10;CLIP-KEY-222&#10;CLIP-KEY-333"
                         value={manualKeys}
                         onChange={(e) => setManualKeys(e.target.value)}
                         style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
@@ -530,7 +516,6 @@ export default function AdminDashboardPage() {
                         onChange={(e) => setManualTelegramFileId(e.target.value)}
                         style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
                       />
-                      {/* PANDUAN PENGAMBILAN TELEGRAM FILE ID */}
                       <div style={{ background: "#1e293b", border: "1px solid #334155", padding: "10px 12px", borderRadius: "6px", marginTop: "8px", fontSize: "0.75rem", color: "#94a3b8" }}>
                         <strong style={{ color: "#38bdf8" }}>Cara Ambil Telegram File ID (File Besar):</strong>
                         <ol style={{ margin: "4px 0 0 0", paddingLeft: "16px", lineHeight: "1.5" }}>
