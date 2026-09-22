@@ -6,7 +6,7 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 // URL Web App Google Apps Script Anda
-const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx23eHNYQIgdnkZckezSsKvvmOaLqBYreIJRiQJbVZEN_71h6cRZO8LUrEskl2riK_G/exec";
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbytlPi9cjf86SI-h9v7mUdvE0aHS9MGccLwcacPSxpeHWh6ZJNv9bZcIauQ-JT7ohWp/exec";
 
 export default function AdminDashboardPage() {
   const [adminPassword, setAdminPassword] = useState("");
