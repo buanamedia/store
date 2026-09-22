@@ -95,10 +95,27 @@ export default function AdminDashboardPage() {
     setFile(null);
   };
 
-  // Copy Snippet Kode Blogspot
+  // Copy Snippet Kode Blogspot (Termasuk 2 Tombol: Beli & WhatsApp Admin)
   const copyBlogspotSnippet = (product: any) => {
     const formattedPrice = Number(product.price || 0).toLocaleString("id-ID");
-    const snippet = `<!-- Script Widget STORE Engine -->\n<script src="https://undig.buanamedia.my.id/blogspot/widget.js"></script>\n\n<!-- Tombol Checkout (${product.name}) -->\n<button type="button" id="${product.id}" class="se-buy-btn" style="padding: 14px 28px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">\n  Beli ${product.name} - Rp ${formattedPrice}\n</button>`;
+    const waText = encodeURIComponent(`Halo Admin, saya ingin bertanya tentang produk '${product.name}' (${product.id}).`);
+    const waLink = `https://wa.me/6281414159500?text=${waText}`;
+
+    const snippet = `<!-- Script Widget STORE Engine -->
+<script src="https://undig.buanamedia.my.id/blogspot/widget.js"></script>
+
+<!-- Container 2 Tombol (Checkout & WhatsApp Admin) -->
+<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 16px 0;">
+  <!-- 1. Tombol Beli Aplikasi -->
+  <button type="button" id="${product.id}" class="se-buy-btn" style="padding: 12px 24px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;">
+    Beli ${product.name} - Rp ${formattedPrice}
+  </button>
+
+  <!-- 2. Tombol Hubungi Admin via WhatsApp -->
+  <a href="${waLink}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background-color: #f1f5f9; color: #0f172a; border: 1px solid #0f172a; border-radius: 8px; font-size: 15px; font-weight: bold; text-decoration: none;">
+    💬 Hubungi Admin via WhatsApp
+  </a>
+</div>`;
 
     navigator.clipboard.writeText(snippet);
     setCopiedId(product.id);
