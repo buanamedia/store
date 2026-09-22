@@ -5,6 +5,9 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+// URL Web App Google Apps Script Anda
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwifb1OzsmJ6BeexYfLPV1av2LogDJ36Hc6CJCpmYfkhfFv6xKc-1mAin3nlI6WR8w/exec";
+
 export default function ProductsAndTransactionsPage() {
   const [adminPassword, setAdminPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -19,6 +22,19 @@ export default function ProductsAndTransactionsPage() {
   const [loadingTransactions, setLoadingTransactions] = useState(false);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Form Modal State untuk Edit Lengkap Produk
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editType, setEditType] = useState("DOWNLOAD");
+  const [editHasLicense, setEditHasLicense] = useState(true);
+  const [editLicenseMode, setEditLicenseMode] = useState("AUTO");
+  const [editManualKeys, setEditManualKeys] = useState("");
+  const [editGeneratorApiUrl, setEditGeneratorApiUrl] = useState("");
+  const [editAppUrl, setEditAppUrl] = useState("");
+  const [editTelegramFileId, setEditTelegramFileId] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Load Data Produk
   const loadProducts = async (pwd: string) => {
@@ -66,7 +82,7 @@ export default function ProductsAndTransactionsPage() {
     }
   };
 
-  // Copy Snippet Kode Blogspot
+  // 1. AKSI: Copy Snippet Kode Blogspot
   const copyBlogspotSnippet = (product: any) => {
     const formattedPrice = Number(product.price || 0).toLocaleString("id-ID");
     const waText = encodeURIComponent(`Halo Admin, saya ingin bertanya tentang produk '${product.name}' (${product.id}).`);
@@ -77,9 +93,12 @@ export default function ProductsAndTransactionsPage() {
 
 <!-- Container 2 Tombol (Presisi Sama Tinggi) -->
 <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 16px 0;">
+  <!-- 1. Tombol Beli Aplikasi -->
   <button type="button" id="${product.id}" class="se-buy-btn" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 24px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; box-sizing: border-box; font-family: inherit;">
     Beli ${product.name} - Rp ${formattedPrice}
   </button>
+
+  <!-- 2. Tombol Hubungi Admin via WhatsApp -->
   <a href="${waLink}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 24px; background-color: #25D366; color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; text-decoration: none; box-sizing: border-box; font-family: inherit;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
@@ -93,6 +112,124 @@ export default function ProductsAndTransactionsPage() {
     setTimeout(() => setCopiedId(null), 3000);
   };
 
+  // 2. AKSI: Edit Cepat Harga
+  const handleEditPrice = async (product: any) => {
+    const inputPrice = prompt(`Masukkan harga baru untuk produk '${product.name}' (Rp):`, product.price);
+
+    if (inputPrice === null) return;
+
+    const newPrice = parseInt(inputPrice.toString().replace(/\D/g, ""), 10);
+
+    if (isNaN(newPrice) || newPrice < 0) {
+      alert("Harga tidak valid!");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          adminPassword,
+          ...product,
+          price: newPrice,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        alert(`Harga produk '${product.name}' berhasil diubah menjadi Rp ${newPrice.toLocaleString("id-ID")}!`);
+        loadProducts(adminPassword);
+      } else {
+        alert(`Gagal merubah harga: ${data.message}`);
+      }
+    } catch (err: any) {
+      alert("Error saat merubah harga: " + err.message);
+    }
+  };
+
+  // 3. AKSI: Hapus Produk
+  const handleDeleteProduct = async (productId: string, productName: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus produk '${productName}' (${productId}) dari database & Telegram?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/products?id=${encodeURIComponent(productId)}&password=${encodeURIComponent(adminPassword)}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        alert(`Produk '${productId}' berhasil dihapus!`);
+        loadProducts(adminPassword);
+      } else {
+        alert(`Gagal menghapus: ${data.message}`);
+      }
+    } catch (err: any) {
+      alert("Error saat menghapus produk: " + err.message);
+    }
+  };
+
+  // 4. AKSI: Buka Modal Edit Lengkap
+  const handleOpenEditModal = (product: any) => {
+    setEditingProduct(product);
+    setEditName(product.name || "");
+    setEditPrice(product.price ? product.price.toString() : "");
+    setEditType(product.type || "DOWNLOAD");
+    setEditHasLicense(product.hasLicense !== false);
+    setEditLicenseMode(product.licenseMode || "AUTO");
+    setEditManualKeys(product.manualKeys || "");
+    setEditGeneratorApiUrl(product.generatorApiUrl || "");
+    setEditAppUrl(product.appUrl || "");
+    setEditTelegramFileId(product.telegramFileId || "");
+  };
+
+  // Simpan Modal Edit Lengkap
+  const handleSaveEditProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+
+    setSavingEdit(true);
+    try {
+      const cleanPrice = parseInt(editPrice.toString().replace(/\D/g, ""), 10) || 0;
+
+      const res = await fetch("/api/admin/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          adminPassword,
+          id: editingProduct.id,
+          name: editName,
+          price: cleanPrice,
+          type: editType,
+          hasLicense: editHasLicense,
+          licenseMode: editLicenseMode,
+          manualKeys: editManualKeys,
+          generatorApiUrl: editGeneratorApiUrl,
+          appUrl: editAppUrl,
+          telegramFileId: editTelegramFileId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        alert(`Produk '${editingProduct.id}' berhasil diperbarui!`);
+        setEditingProduct(null);
+        loadProducts(adminPassword);
+      } else {
+        alert(`Gagal memperbarui: ${data.message}`);
+      }
+    } catch (err: any) {
+      alert("Error memperbarui produk: " + err.message);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   return (
     <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", padding: "20px 12px", fontFamily: "sans-serif" }}>
       <style>{`
@@ -100,6 +237,7 @@ export default function ProductsAndTransactionsPage() {
         table { border-collapse: collapse !important; width: 100% !important; }
         td, th { vertical-align: middle !important; white-space: nowrap !important; }
         a { text-decoration: none !important; }
+        button { display: inline-flex !important; align-items: center !important; justify-content: center !important; }
       `}</style>
 
       {!isAuthenticated ? (
@@ -126,7 +264,7 @@ export default function ProductsAndTransactionsPage() {
         </div>
       ) : (
         /* Main Dashboard View */
-        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+        <div style={{ maxWidth: "1150px", margin: "0 auto" }}>
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155", flexWrap: "wrap", gap: "12px" }}>
             <div>
@@ -199,7 +337,7 @@ export default function ProductsAndTransactionsPage() {
                         <th style={{ padding: "12px 10px" }}>Harga</th>
                         <th style={{ padding: "12px 10px" }}>Tipe</th>
                         <th style={{ padding: "12px 10px" }}>Lisensi Mode</th>
-                        <th style={{ padding: "12px 10px", textAlign: "right" }}>Kode Blogspot</th>
+                        <th style={{ padding: "12px 10px", textAlign: "right" }}>Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -217,21 +355,72 @@ export default function ProductsAndTransactionsPage() {
                             {p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
                           </td>
                           <td style={{ padding: "12px 10px", textAlign: "right" }}>
-                            <button
-                              onClick={() => copyBlogspotSnippet(p)}
-                              style={{
-                                background: copiedId === p.id ? "#10b981" : "#2563eb",
-                                color: "#fff",
-                                border: "none",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "0.75rem",
-                                fontWeight: "bold"
-                              }}
-                            >
-                              {copiedId === p.id ? "✓ Tersalin!" : "📋 Copy Code"}
-                            </button>
+                            <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                              <button
+                                onClick={() => handleOpenEditModal(p)}
+                                style={{
+                                  background: "#0284c7",
+                                  color: "#fff",
+                                  border: "none",
+                                  padding: "6px 12px",
+                                  borderRadius: "6px",
+                                  cursor: "pointer",
+                                  fontSize: "0.75rem",
+                                  fontWeight: "bold",
+                                  whiteSpace: "nowrap"
+                                }}
+                              >
+                                ✏️ Edit Lengkap
+                              </button>
+                              <button
+                                onClick={() => handleEditPrice(p)}
+                                style={{
+                                  background: "#f59e0b",
+                                  color: "#fff",
+                                  border: "none",
+                                  padding: "6px 12px",
+                                  borderRadius: "6px",
+                                  cursor: "pointer",
+                                  fontSize: "0.75rem",
+                                  fontWeight: "bold",
+                                  whiteSpace: "nowrap"
+                                }}
+                              >
+                                💰 Edit Harga
+                              </button>
+                              <button
+                                onClick={() => copyBlogspotSnippet(p)}
+                                style={{
+                                  background: copiedId === p.id ? "#10b981" : "#2563eb",
+                                  color: "#fff",
+                                  border: "none",
+                                  padding: "6px 12px",
+                                  borderRadius: "6px",
+                                  cursor: "pointer",
+                                  fontSize: "0.75rem",
+                                  fontWeight: "bold",
+                                  whiteSpace: "nowrap"
+                                }}
+                              >
+                                {copiedId === p.id ? "✓ Tersalin!" : "📋 Copy Code"}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteProduct(p.id, p.name)}
+                                style={{
+                                  background: "#ef4444",
+                                  color: "#fff",
+                                  border: "none",
+                                  padding: "6px 12px",
+                                  borderRadius: "6px",
+                                  cursor: "pointer",
+                                  fontSize: "0.75rem",
+                                  fontWeight: "bold",
+                                  whiteSpace: "nowrap"
+                                }}
+                              >
+                                🗑 Hapus
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -300,6 +489,99 @@ export default function ProductsAndTransactionsPage() {
                   </table>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* MODAL POPUP EDIT LENGKAP PRODUK */}
+          {editingProduct && (
+            <div style={{
+              position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+              background: "rgba(15, 23, 42, 0.85)", backdropFilter: "blur(4px)",
+              display: "flex", alignItems: "center", justifyCenter: "center",
+              zIndex: 9999, padding: "16px"
+            }}>
+              <div style={{
+                background: "#1e293b", color: "#f8fafc", border: "1px solid #334155",
+                padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px",
+                maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <h3 style={{ margin: 0, color: "#38bdf8" }}>Edit Produk: {editingProduct.id}</h3>
+                  <button onClick={() => setEditingProduct(null)} style={{ background: "transparent", border: "none", color: "#94a3b8", fontSize: "1.2rem", cursor: "pointer" }}>&times;</button>
+                </div>
+
+                <form onSubmit={handleSaveEditProduct}>
+                  <div style={{ marginBottom: "12px" }}>
+                    <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Nama Produk</label>
+                    <input type="text" required value={editName} onChange={(e) => setEditName(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }} />
+                  </div>
+
+                  <div style={{ marginBottom: "12px" }}>
+                    <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Harga (Rp)</label>
+                    <input type="number" required value={editPrice} onChange={(e) => setEditPrice(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }} />
+                  </div>
+
+                  <div style={{ marginBottom: "12px" }}>
+                    <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Tipe Penjualan</label>
+                    <select value={editType} onChange={(e) => setEditType(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}>
+                      <option value="DOWNLOAD">File Download / Software Installer</option>
+                      <option value="ACCESS">Akses Portal Web / Aplikasi / SaaS</option>
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: "12px" }}>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.85rem" }}>
+                      <input type="checkbox" checked={editHasLicense} onChange={(e) => setEditHasLicense(e.target.checked)} /> Gunakan Kode Lisensi Unik?
+                    </label>
+                  </div>
+
+                  {editHasLicense && (
+                    <div style={{ background: "#0f172a", padding: "12px", borderRadius: "8px", marginBottom: "12px", border: "1px solid #334155" }}>
+                      <label style={{ display: "block", fontSize: "0.8rem", color: "#38bdf8", marginBottom: "6px" }}>Metode Sumber Lisensi Serial Key:</label>
+                      <select value={editLicenseMode} onChange={(e) => setEditLicenseMode(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", marginBottom: editLicenseMode !== "AUTO" ? "8px" : "0" }}>
+                        <option value="AUTO">1. Generate Otomatis (Default STORE Engine)</option>
+                        <option value="MANUAL">2. Input Manual Serial Key (Stok Lisensi Saya)</option>
+                        <option value="GENERATOR">3. External Keygen API</option>
+                      </select>
+
+                      {editLicenseMode === "MANUAL" && (
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>Daftar Serial Key:</label>
+                          <textarea rows={3} value={editManualKeys} onChange={(e) => setEditManualKeys(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", fontFamily: "monospace" }} />
+                        </div>
+                      )}
+
+                      {editLicenseMode === "GENERATOR" && (
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>URL External Keygen Generator API:</label>
+                          <input type="url" value={editGeneratorApiUrl} onChange={(e) => setEditGeneratorApiUrl(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff" }} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {editType === "ACCESS" ? (
+                    <div style={{ marginBottom: "16px" }}>
+                      <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>URL Portal Web / Aplikasi (`appUrl`)</label>
+                      <input type="url" required value={editAppUrl} onChange={(e) => setEditAppUrl(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }} />
+                    </div>
+                  ) : (
+                    <div style={{ marginBottom: "16px" }}>
+                      <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Telegram File ID</label>
+                      <input type="text" value={editTelegramFileId} onChange={(e) => setEditTelegramFileId(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff", fontFamily: "monospace" }} />
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+                    <button type="submit" disabled={savingEdit} style={{ flex: 1, padding: "10px", background: "#0284c7", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
+                      {savingEdit ? "Memproses..." : "Simpan Perubahan"}
+                    </button>
+                    <button type="button" onClick={() => setEditingProduct(null)} style={{ padding: "10px 16px", background: "#475569", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}>
+                      Batal
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
         </div>
