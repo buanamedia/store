@@ -16,6 +16,7 @@ export default function AdminGuidePage() {
       `}</style>
 
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+        {/* HEADER & NAVIGASI */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155" }}>
           <div>
             <h1 style={{ fontSize: "1.4rem", margin: 0, color: "#38bdf8" }}>Panduan Lengkap Admin STORE Engine</h1>
@@ -26,7 +27,10 @@ export default function AdminGuidePage() {
           </Link>
         </div>
 
+        {/* CONTENT BOX */}
         <div style={{ background: "#1e293b", padding: "32px", borderRadius: "16px", border: "1px solid #334155", lineHeight: "1.6" }}>
+          
+          {/* SECTION 1 */}
           <section style={{ marginBottom: "32px" }}>
             <h2 style={{ color: "#38bdf8", fontSize: "1.2rem", borderBottom: "1px solid #334155", paddingBottom: "8px", marginTop: 0 }}>
               1. Manajemen & Pengaturan Produk
@@ -41,6 +45,7 @@ export default function AdminGuidePage() {
             </ul>
           </section>
 
+          {/* SECTION 2 */}
           <section style={{ marginBottom: "32px" }}>
             <h2 style={{ color: "#38bdf8", fontSize: "1.2rem", borderBottom: "1px solid #334155", paddingBottom: "8px" }}>
               2. Metode Sumber Lisensi
@@ -55,6 +60,7 @@ export default function AdminGuidePage() {
             </ol>
           </section>
 
+          {/* SECTION 3 */}
           <section style={{ marginBottom: "32px" }}>
             <h2 style={{ color: "#38bdf8", fontSize: "1.2rem", borderBottom: "1px solid #334155", paddingBottom: "8px" }}>
               3. Cara Mengambil Telegram File ID (Untuk File Berukuran Besar)
@@ -76,6 +82,7 @@ export default function AdminGuidePage() {
             </ol>
           </section>
 
+          {/* SECTION 4 */}
           <section style={{ marginBottom: "16px" }}>
             <h2 style={{ color: "#38bdf8", fontSize: "1.2rem", borderBottom: "1px solid #334155", paddingBottom: "8px" }}>
               4. Memasang Tombol Beli di Blogspot
@@ -84,6 +91,7 @@ export default function AdminGuidePage() {
               Di daftar produk dashboard admin, klik tombol <strong>📋 Copy Code</strong> pada produk yang diinginkan, lalu tempelkan kode HTML/JavaScript tersebut di postingan atau tata letak (layout) Blogspot Anda.
             </p>
           </section>
+
         </div>
       </div>
     </div>
