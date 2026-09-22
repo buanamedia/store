@@ -72,32 +72,29 @@ export default function AdminGuidePage() {
             </ol>
           </section>
 
-          {/* SECTION 3 */}
+          {/* SECTION 3 - ALUR TERBAIK UNTUK FILE BESAR */}
           <section style={{ marginBottom: "32px" }}>
             <h2 style={{ color: "#38bdf8", fontSize: "1.2rem", borderBottom: "1px solid #334155", paddingBottom: "8px" }}>
-              3. Cara Mengambil Telegram File ID (Untuk File Berukuran Besar)
+              3. Cara Mengambil Telegram File ID (Untuk File Ukuran Besar &gt; 50MB)
             </h2>
             <p style={{ color: "#cbd5e1", fontSize: "0.9rem" }}>
-              Untuk file aplikasi yang ukurannya melebihi batas unggah langsung Google Apps Script (GAS), gunakan metode <strong>Input Manual Telegram File ID</strong> dengan langkah-langkah berikut:
+              Untuk file installer/aplikasi berukuran besar yang diunggah langsung di Telegram, ikuti alur praktis berikut untuk mendapatkan <code>file_id</code>:
             </p>
             <ol style={{ color: "#94a3b8", fontSize: "0.875rem", paddingLeft: "20px", lineHeight: "1.8" }}>
-              <li>Kirimkan file installer/aplikasi berukuran besar langsung ke Chat / Group Bot Telegram Anda.</li>
-              <li>
-                Buka browser dan akses:{" "}
-                <a
-                  href="https://api.telegram.org/bot8366582148:AAH82q0GljNWjDxYE4JYAriWXlZesVo1u4c/getUpdates"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "#38bdf8", wordBreak: "break-all" }}
-                >
-                  https://api.telegram.org/bot8366582148:AAH82q0GljNWjDxYE4JYAriWXlZesVo1u4c/getUpdates
-                </a>
+              <li style={{ marginBottom: "8px" }}>
+                Kirimkan file aplikasi/installer berukuran besar ke <strong>Grup Telegram</strong> tempat bot Anda berada.
               </li>
-              <li>Cari objek respon JSON terbaru, lalu temukan teks <code>"file_id"</code> di dalam bagian <code>"document"</code>.
+              <li style={{ marginBottom: "8px" }}>
+                Ketuk tahan file yang baru terkirim di grup, lalu pilih <strong>Forward (Teruskan)</strong> file tersebut ke bot pembantu: <code>@ShowJsonBot</code> atau <code>@FileIdBot</code>.
+              </li>
+              <li style={{ marginBottom: "8px" }}>
+                Bot pembantu akan langsung membalas obrolan pribadi Anda dengan teks detail berkas. Cari dan salin kode string <code>file_id</code>.
                 <br />
-                <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Contoh teks: <code>"file_id": "BQACAgUAAxkBAAIB..."</code></span>
+                <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Contoh kode: <code>BQACAgUAAxkBAAIB...</code></span>
               </li>
-              <li>Salin nilai string kodenya (misal: <code>BQACAgUAAxkBAAIB...</code>) dan tempelkan ke kolom <strong>Telegram File ID</strong> pada form tambah produk.</li>
+              <li style={{ marginBottom: "8px" }}>
+                Buka Admin Dashboard STORE Engine, pilih opsi <strong>2. Input Manual Telegram File ID</strong>, lalu tempelkan kode tersebut.
+              </li>
             </ol>
           </section>
 
