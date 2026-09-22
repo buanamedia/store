@@ -208,7 +208,7 @@ export default function AdminDashboardPage() {
             method: "POST",
             headers: { "Content-Type": "text/plain" },
             body: JSON.stringify({
-              secretKey: "gpfadmin123",
+              secretKey: "buanamedia12066911", // Sesuaikan dengan SECRET_KEY baru
               fileName: file.name,
               category: "ZIP",
               fileData: base64Data,
@@ -556,7 +556,7 @@ export default function AdminDashboardPage() {
                         <strong style={{ color: "#38bdf8" }}>Cara Ambil Telegram File ID (File Besar):</strong>
                         <ol style={{ margin: "4px 0 0 0", paddingLeft: "16px", lineHeight: "1.5" }}>
                           <li>Kirim file aplikasi berukuran besar langsung ke Bot Telegram Anda.</li>
-                          <li>Buka browser dan akses: <code style={{ color: "#f1f5f9" }}>https://api.telegram.org/bot8866448027:AAGnI1f00nwAk0LF9Ge5mYlXVi_mJQoVnk8/getUpdates</code></li>
+                          <li>Buka browser dan akses: <code style={{ color: "#f1f5f9" }}>https://api.telegram.org/bot8366582148:AAH82q0GljNWjDxYE4JYAriWXlZesVo1u4c/getUpdates</code></li>
                           <li>Cari teks <code style={{ color: "#f1f5f9" }}>"file_id"</code> pada objek dokumen, lalu salin kodenya dan tempelkan di kolom atas.</li>
                         </ol>
                       </div>
