@@ -95,7 +95,7 @@ export default function AdminDashboardPage() {
     setFile(null);
   };
 
-  // Copy Snippet Kode Blogspot (Termasuk 2 Tombol: Beli & WhatsApp Admin Presisi)
+  // Copy Snippet Kode Blogspot (2 Tombol Presisi Sama Tinggi & Teks 'Hubungi Admin')
   const copyBlogspotSnippet = (product: any) => {
     const formattedPrice = Number(product.price || 0).toLocaleString("id-ID");
     const waText = encodeURIComponent(`Halo Admin, saya ingin bertanya tentang produk '${product.name}' (${product.id}).`);
@@ -104,19 +104,19 @@ export default function AdminDashboardPage() {
     const snippet = `<!-- Script Widget STORE Engine -->
 <script src="https://undig.buanamedia.my.id/blogspot/widget.js"></script>
 
-<!-- Container 2 Tombol (Checkout & WhatsApp Admin) -->
+<!-- Container 2 Tombol (Presisi Sama Tinggi & Rapi) -->
 <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 16px 0;">
   <!-- 1. Tombol Beli Aplikasi -->
-  <button type="button" id="${product.id}" class="se-buy-btn" style="padding: 14px 28px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">
+  <button type="button" id="${product.id}" class="se-buy-btn" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 24px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; box-sizing: border-box; font-family: inherit;">
     Beli ${product.name} - Rp ${formattedPrice}
   </button>
 
-  <!-- 2. Tombol Hubungi Admin via WhatsApp (Presisi Sama Ukuran) -->
-  <a href="${waLink}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; background-color: #25D366; color: #ffffff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-decoration: none;">
+  <!-- 2. Tombol Hubungi Admin via WhatsApp -->
+  <a href="${waLink}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 24px; background-color: #25D366; color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; text-decoration: none; box-sizing: border-box; font-family: inherit;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
     </svg>
-    Hubungi Admin via WhatsApp
+    Hubungi Admin
   </a>
 </div>`;
 
@@ -228,7 +228,7 @@ export default function AdminDashboardPage() {
             method: "POST",
             headers: { "Content-Type": "text/plain" },
             body: JSON.stringify({
-              secretKey: "buanamedia12066911", // Sesuaikan dengan SECRET_KEY baru
+              secretKey: "buanamedia12066911", // Sesuaikan dengan SECRET_KEY Anda
               fileName: file.name,
               category: "ZIP",
               fileData: base64Data,
