@@ -355,6 +355,12 @@ export default function AdminDashboardPage() {
                 🏠 Home
               </a>
               <Link
+                href="/admin/products"
+                style={{ background: "#10b981", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
+              >
+                📦 Produk & Transaksi
+              </Link>
+              <Link
                 href="/admin/guide"
                 style={{ background: "#0284c7", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
               >
