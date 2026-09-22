@@ -40,9 +40,29 @@ export async function POST(request: Request) {
     }
     const productData = productDoc.data();
 
+    // 2. Cek Stok Lisensi Manual
+    if (productData?.hasLicense !== false && productData?.licenseMode === "MANUAL") {
+      let keys: string[] = [];
+      if (Array.isArray(productData.manualKeys)) {
+        keys = productData.manualKeys;
+      } else if (typeof productData.manualKeys === "string") {
+        keys = productData.manualKeys.split("\n").map((k) => k.trim()).filter(Boolean);
+      }
+
+      if (keys.length === 0) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: "Mohon maaf, stok lisensi untuk produk ini sedang habis. Silakan hubungi admin." 
+          },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+    }
+
     const invoiceNumber = `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    // 2. Simpan order ke Firestore
+    // 3. Simpan order ke Firestore
     await db.collection("orders").doc(invoiceNumber).set({
       invoiceNumber,
       productId,
@@ -55,7 +75,7 @@ export async function POST(request: Request) {
       updatedAt: new Date().toISOString(),
     });
 
-    // 3. Buat URL Pembayaran DOKU
+    // 4. Buat URL Pembayaran DOKU
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://store-indol-seven.vercel.app";
     const dokuResponse = await createDokuCheckoutUrl({
       invoiceNumber,
