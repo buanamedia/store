@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +38,16 @@ export default function AdminDashboardPage() {
   const [loadingStatus, setLoadingStatus] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  useEffect(() => {
+  const savedPwd = sessionStorage.getItem("admin_session_pwd");
+
+  if (savedPwd) {
+    setAdminPassword(savedPwd);
+    setIsAuthenticated(true);
+    loadProducts(savedPwd);
+  }
+}, []);
+
   const loadProducts = async (pwd: string) => {
     setFetchingProducts(true);
     try {
@@ -46,10 +56,15 @@ export default function AdminDashboardPage() {
 
       if (res.ok && data.success) {
         setProducts(data.products || []);
-      } else {
-        alert(data.message || "Password Salah!");
-        setIsAuthenticated(false);
-      }
+     } else {
+  alert(data.message || "Password Salah!");
+
+  sessionStorage.removeItem(
+    "admin_session_pwd"
+  );
+
+  setIsAuthenticated(false);
+}
     } catch (e: any) {
       alert("Error memuat produk: " + e.message);
     } finally {
@@ -58,12 +73,18 @@ export default function AdminDashboardPage() {
   };
 
   const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminPassword.trim().length > 0) {
-      setIsAuthenticated(true);
-      loadProducts(adminPassword);
-    }
-  };
+  e.preventDefault();
+
+  if (adminPassword.trim().length > 0) {
+    sessionStorage.setItem(
+      "admin_session_pwd",
+      adminPassword
+    );
+
+    setIsAuthenticated(true);
+    loadProducts(adminPassword);
+  }
+};
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -366,7 +387,14 @@ export default function AdminDashboardPage() {
               >
                 📖 Panduan
               </Link>
-              <button onClick={() => setIsAuthenticated(false)} style={{ background: "#ef4444", border: "none", color: "#fff", padding: "8px 12px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "0.85rem" }}>
+              <button
+  onClick={() => {
+    sessionStorage.removeItem(
+      "admin_session_pwd"
+    );
+    setIsAuthenticated(false);
+    setAdminPassword("");
+  }} style={{ background: "#ef4444", border: "none", color: "#fff", padding: "8px 12px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "0.85rem" }}>
                 Logout
               </button>
             </div>
