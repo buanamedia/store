@@ -15,7 +15,7 @@
     }
   }
 
-  // Inject Styling Modal
+  // Inject Styling Modal & Status Tombol Stok Habis
   const style = document.createElement("style");
   style.innerHTML = `
     .se-modal-overlay {
@@ -47,8 +47,48 @@
       background: transparent !important; border: none !important; color: #94a3b8 !important; float: right !important;
       font-size: 1.2rem !important; cursor: pointer !important;
     }
+    /* Styling Tambahan untuk Tombol Stok Habis */
+    .se-buy-btn.out-of-stock, [data-store-product].out-of-stock {
+      background-color: #64748b !important;
+      color: #cbd5e1 !important;
+      cursor: not-allowed !important;
+      opacity: 0.7 !important;
+      border: 1px solid #475569 !important;
+    }
   `;
   document.head.appendChild(style);
+
+  // --- FUNGSI CEK STOK OTOMATIS SAAT HALAMAN DIMUAT ---
+  async function checkAllProductStocks() {
+    const buttons = document.querySelectorAll(".se-buy-btn, [data-store-product]");
+    
+    buttons.forEach(async (btn) => {
+      const productId = btn.getAttribute("data-store-product") || btn.getAttribute("id");
+      if (!productId) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/products/${productId}`);
+        const data = await res.json();
+
+        if (data.success && data.product && data.product.isOutOfStock) {
+          // Ubah Tampilan Tombol Menjadi Stok Habis
+          btn.classList.add("out-of-stock");
+          btn.setAttribute("disabled", "true");
+          btn.style.pointerEvents = "none";
+          btn.innerText = "❌ Stok Habis";
+        }
+      } catch (err) {
+        console.error("Gagal memeriksa stok produk:", productId, err);
+      }
+    });
+  }
+
+  // Jalankan Pengecekan Stok Begitu DOM Siap
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", checkAllProductStocks);
+  } else {
+    checkAllProductStocks();
+  }
 
   function initModal() {
     if (document.getElementById("seModal")) return;
@@ -122,9 +162,12 @@
     };
   }
 
+  // Listener Klik Tombol
   document.addEventListener("click", function (e) {
     const btn = e.target.closest("[data-store-product], .se-buy-btn");
-    if (btn) {
+    
+    // Jangan buka modal jika tombol dalam keadaan Stok Habis / Disabled
+    if (btn && !btn.hasAttribute("disabled") && !btn.classList.contains("out-of-stock")) {
       e.preventDefault();
       initModal();
       
