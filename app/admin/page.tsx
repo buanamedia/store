@@ -164,7 +164,7 @@ export default function AdminDashboardPage() {
     }
 
     setFile(null);
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Fungsi Hapus Produk dari Firestore & Telegram
@@ -269,18 +269,35 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", padding: "40px 20px", fontFamily: "sans-serif" }}>
+    <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", padding: "20px 12px", fontFamily: "sans-serif" }}>
       <style>{`
         * { box-sizing: border-box; }
         table { border-collapse: collapse !important; width: 100% !important; }
         td, th { vertical-align: middle !important; white-space: nowrap !important; }
         button { display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important; min-height: 32px !important; }
         a { text-decoration: none !important; }
+
+        /* Mobile Responsive adjustments */
+        @media (max-width: 768px) {
+          .dash-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 16px !important;
+          }
+          .dash-header-actions {
+            width: 100% !important;
+            justify-content: space-between !important;
+            flex-wrap: wrap !important;
+          }
+          .dash-card {
+            padding: 16px !important;
+          }
+        }
       `}</style>
 
       {!isAuthenticated ? (
         /* Layar Login Admin */
-        <div style={{ maxWidth: "400px", width: "100%", margin: "80px auto 0 auto", background: "#1e293b", padding: "32px", borderRadius: "16px", border: "1px solid #334155", textAlign: "center" }}>
+        <div style={{ maxWidth: "400px", width: "100%", margin: "60px auto 0 auto", background: "#1e293b", padding: "24px", borderRadius: "16px", border: "1px solid #334155", textAlign: "center" }}>
           <h2 style={{ color: "#38bdf8", marginTop: 0 }}>STORE Admin Login</h2>
           <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginBottom: "24px" }}>Masukkan Password Admin Vercel Anda untuk melanjutkan.</p>
           <form onSubmit={handleLogin}>
@@ -303,148 +320,34 @@ export default function AdminDashboardPage() {
       ) : (
         /* Dashboard Admin Main View */
         <div style={{ maxWidth: "1050px", margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155" }}>
+          <div className="dash-header dash-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155" }}>
             <div>
-              <h1 style={{ fontSize: "1.4rem", margin: 0, color: "#38bdf8" }}>STORE Engine Dashboard</h1>
+              <h1 style={{ fontSize: "1.3rem", margin: 0, color: "#38bdf8" }}>STORE Engine Dashboard</h1>
               <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>buanamedia.my.id</span>
             </div>
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <div className="dash-header-actions" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
               <a
                 href="https://buanamedia.my.id"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ background: "#334155", color: "#f8fafc", padding: "8px 14px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
+                style={{ background: "#334155", color: "#f8fafc", padding: "8px 12px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
               >
                 🏠 Home
               </a>
               <Link
                 href="/admin/guide"
-                style={{ background: "#0284c7", color: "#fff", padding: "8px 14px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
+                style={{ background: "#0284c7", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
               >
                 📖 Panduan
               </Link>
-              <button onClick={() => setIsAuthenticated(false)} style={{ background: "#ef4444", border: "none", color: "#fff", padding: "8px 14px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "0.85rem" }}>
+              <button onClick={() => setIsAuthenticated(false)} style={{ background: "#ef4444", border: "none", color: "#fff", padding: "8px 12px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "0.85rem" }}>
                 Logout
               </button>
             </div>
           </div>
 
-          {/* TABEL DAFTAR PRODUK */}
-          <div style={{ background: "#1e293b", padding: "24px", borderRadius: "16px", border: "1px solid #334155", marginBottom: "32px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#f8fafc" }}>Daftar Produk di Database ({products.length})</h2>
-              <button onClick={() => loadProducts(adminPassword)} style={{ background: "#334155", border: "none", color: "#38bdf8", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem" }}>Refresh Data</button>
-            </div>
-
-            {fetchingProducts ? (
-              <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>Memuat produk dari Firestore...</p>
-            ) : products.length === 0 ? (
-              <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>Belum ada produk yang tersimpan.</p>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid #334155", color: "#94a3b8" }}>
-                      <th style={{ padding: "12px 10px" }}>ID Produk</th>
-                      <th style={{ padding: "12px 10px" }}>Nama Produk</th>
-                      <th style={{ padding: "12px 10px" }}>Harga</th>
-                      <th style={{ padding: "12px 10px" }}>Tipe</th>
-                      <th style={{ padding: "12px 10px" }}>Lisensi Mode</th>
-                      <th style={{ padding: "12px 10px", textAlign: "right" }}>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map((p) => (
-                      <tr key={p.id} style={{ borderBottom: "1px solid #334155" }}>
-                        <td style={{ padding: "12px 10px", fontWeight: "bold", color: "#38bdf8", verticalAlign: "middle" }}>{p.id}</td>
-                        <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>{p.name}</td>
-                        <td style={{ padding: "12px 10px", color: "#10b981", fontWeight: "bold", verticalAlign: "middle" }}>Rp {Number(p.price || 0).toLocaleString("id-ID")}</td>
-                        <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
-                          <span style={{ padding: "4px 8px", borderRadius: "4px", background: p.type === "ACCESS" ? "#065f46" : "#1e40af", color: "#fff", fontSize: "0.75rem", fontWeight: "600", display: "inline-block" }}>
-                            {p.type || "DOWNLOAD"}
-                          </span>
-                        </td>
-                        <td style={{ padding: "12px 10px", color: "#cbd5e1", verticalAlign: "middle" }}>
-                          {p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
-                        </td>
-                        <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
-                          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                            <button
-                              onClick={() => handleEditFullProduct(p)}
-                              style={{
-                                background: "#0284c7",
-                                color: "#fff",
-                                border: "none",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "0.75rem",
-                                fontWeight: "bold",
-                                whiteSpace: "nowrap"
-                              }}
-                            >
-                              ✏️ Edit Lengkap
-                            </button>
-                            <button
-                              onClick={() => handleEditPrice(p)}
-                              style={{
-                                background: "#f59e0b",
-                                color: "#fff",
-                                border: "none",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "0.75rem",
-                                fontWeight: "bold",
-                                whiteSpace: "nowrap"
-                              }}
-                            >
-                              💰 Edit Harga
-                            </button>
-                            <button
-                              onClick={() => copyBlogspotSnippet(p)}
-                              style={{
-                                background: copiedId === p.id ? "#10b981" : "#2563eb",
-                                color: "#fff",
-                                border: "none",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "0.75rem",
-                                fontWeight: "bold",
-                                whiteSpace: "nowrap"
-                              }}
-                            >
-                              {copiedId === p.id ? "✓ Tersalin!" : "📋 Copy Code"}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteProduct(p.id, p.name)}
-                              style={{
-                                background: "#ef4444",
-                                color: "#fff",
-                                border: "none",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "0.75rem",
-                                fontWeight: "bold",
-                                whiteSpace: "nowrap"
-                              }}
-                            >
-                              🗑 Hapus
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* FORM TAMBAH / UPDATE PRODUK */}
-          <div style={{ background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid #334155" }}>
+          {/* FORM TAMBAH / UPDATE PRODUK (DIATAS) */}
+          <div className="dash-card" style={{ background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid #334155", marginBottom: "32px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#f8fafc" }}>
                 {isEditing ? `Edit Produk: ${id}` : "Tambah / Update Produk Baru"}
@@ -682,6 +585,120 @@ export default function AdminDashboardPage() {
                 {loading ? (loadingStatus || "Memproses...") : isEditing ? "Perbarui Produk Di Database" : "Simpan Produk Ke Database"}
               </button>
             </form>
+          </div>
+
+          {/* TABEL DAFTAR PRODUK (DIBAWAH) */}
+          <div className="dash-card" style={{ background: "#1e293b", padding: "24px", borderRadius: "16px", border: "1px solid #334155" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#f8fafc" }}>Daftar Produk di Database ({products.length})</h2>
+              <button onClick={() => loadProducts(adminPassword)} style={{ background: "#334155", border: "none", color: "#38bdf8", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem" }}>Refresh Data</button>
+            </div>
+
+            {fetchingProducts ? (
+              <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>Memuat produk dari Firestore...</p>
+            ) : products.length === 0 ? (
+              <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>Belum ada produk yang tersimpan.</p>
+            ) : (
+              <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #334155", color: "#94a3b8" }}>
+                      <th style={{ padding: "12px 10px" }}>ID Produk</th>
+                      <th style={{ padding: "12px 10px" }}>Nama Produk</th>
+                      <th style={{ padding: "12px 10px" }}>Harga</th>
+                      <th style={{ padding: "12px 10px" }}>Tipe</th>
+                      <th style={{ padding: "12px 10px" }}>Lisensi Mode</th>
+                      <th style={{ padding: "12px 10px", textAlign: "right" }}>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map((p) => (
+                      <tr key={p.id} style={{ borderBottom: "1px solid #334155" }}>
+                        <td style={{ padding: "12px 10px", fontWeight: "bold", color: "#38bdf8", verticalAlign: "middle" }}>{p.id}</td>
+                        <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>{p.name}</td>
+                        <td style={{ padding: "12px 10px", color: "#10b981", fontWeight: "bold", verticalAlign: "middle" }}>Rp {Number(p.price || 0).toLocaleString("id-ID")}</td>
+                        <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
+                          <span style={{ padding: "4px 8px", borderRadius: "4px", background: p.type === "ACCESS" ? "#065f46" : "#1e40af", color: "#fff", fontSize: "0.75rem", fontWeight: "600", display: "inline-block" }}>
+                            {p.type || "DOWNLOAD"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 10px", color: "#cbd5e1", verticalAlign: "middle" }}>
+                          {p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
+                        </td>
+                        <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                            <button
+                              onClick={() => handleEditFullProduct(p)}
+                              style={{
+                                background: "#0284c7",
+                                color: "#fff",
+                                border: "none",
+                                padding: "6px 12px",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.75rem",
+                                fontWeight: "bold",
+                                whiteSpace: "nowrap"
+                              }}
+                            >
+                              ✏️ Edit Lengkap
+                            </button>
+                            <button
+                              onClick={() => handleEditPrice(p)}
+                              style={{
+                                background: "#f59e0b",
+                                color: "#fff",
+                                border: "none",
+                                padding: "6px 12px",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.75rem",
+                                fontWeight: "bold",
+                                whiteSpace: "nowrap"
+                              }}
+                            >
+                              💰 Edit Harga
+                            </button>
+                            <button
+                              onClick={() => copyBlogspotSnippet(p)}
+                              style={{
+                                background: copiedId === p.id ? "#10b981" : "#2563eb",
+                                color: "#fff",
+                                border: "none",
+                                padding: "6px 12px",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.75rem",
+                                fontWeight: "bold",
+                                whiteSpace: "nowrap"
+                              }}
+                            >
+                              {copiedId === p.id ? "✓ Tersalin!" : "📋 Copy Code"}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(p.id, p.name)}
+                              style={{
+                                background: "#ef4444",
+                                color: "#fff",
+                                border: "none",
+                                padding: "6px 12px",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.75rem",
+                                fontWeight: "bold",
+                                whiteSpace: "nowrap"
+                              }}
+                            >
+                              🗑 Hapus
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
