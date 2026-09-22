@@ -7,28 +7,40 @@ export const dynamic = "force-dynamic";
 
 export default function AdminGuidePage() {
   return (
-    <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", padding: "40px 20px", fontFamily: "sans-serif" }}>
+    <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", padding: "20px 12px", fontFamily: "sans-serif" }}>
       <style>{`
         * { box-sizing: border-box; }
         code { background: #0f172a; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; border: 1px solid #334155; }
         a { color: #38bdf8; text-decoration: none; }
         a:hover { text-decoration: underline; }
+
+        /* Mobile Responsive adjustments */
+        @media (max-width: 768px) {
+          .guide-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 16px !important;
+          }
+          .guide-card {
+            padding: 20px 16px !important;
+          }
+        }
       `}</style>
 
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
         {/* HEADER & NAVIGASI */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155" }}>
+        <div className="guide-header guide-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155" }}>
           <div>
-            <h1 style={{ fontSize: "1.4rem", margin: 0, color: "#38bdf8" }}>Panduan Lengkap Admin STORE Engine</h1>
+            <h1 style={{ fontSize: "1.3rem", margin: 0, color: "#38bdf8" }}>Panduan Lengkap Admin STORE Engine</h1>
             <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Dokumentasi & Petunjuk Penggunaan</span>
           </div>
-          <Link href="/admin" style={{ background: "#2563eb", color: "#fff", padding: "8px 16px", borderRadius: "6px", fontWeight: "bold", fontSize: "0.85rem" }}>
+          <Link href="/admin" style={{ background: "#2563eb", color: "#fff", padding: "8px 16px", borderRadius: "6px", fontWeight: "bold", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
             ← Dashboard
           </Link>
         </div>
 
         {/* CONTENT BOX */}
-        <div style={{ background: "#1e293b", padding: "32px", borderRadius: "16px", border: "1px solid #334155", lineHeight: "1.6" }}>
+        <div className="guide-card" style={{ background: "#1e293b", padding: "32px", borderRadius: "16px", border: "1px solid #334155", lineHeight: "1.6" }}>
           
           {/* SECTION 1 */}
           <section style={{ marginBottom: "32px" }}>
@@ -71,16 +83,16 @@ export default function AdminGuidePage() {
             <ol style={{ color: "#94a3b8", fontSize: "0.875rem", paddingLeft: "20px", lineHeight: "1.8" }}>
               <li>Kirimkan file installer/aplikasi berukuran besar langsung ke Chat / Group Bot Telegram Anda.</li>
               <li>
-  Buka browser dan akses:{" "}
-  <a
-    href="https://api.telegram.org/bot8866448027:AAGnI1f00nwAk0LF9Ge5mYlXVi_mJQoVnk8/getUpdates"
-    target="_blank"
-    rel="noopener noreferrer"
-    style={{ color: "#38bdf8", wordBreak: "break-all" }}
-  >
-    https://api.telegram.org/bot8866448027:AAGnI1f00nwAk0LF9Ge5mYlXVi_mJQoVnk8/getUpdates
-  </a>
-</li>
+                Buka browser dan akses:{" "}
+                <a
+                  href="https://api.telegram.org/bot8366582148:AAH82q0GljNWjDxYE4JYAriWXlZesVo1u4c/getUpdates"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "#38bdf8", wordBreak: "break-all" }}
+                >
+                  https://api.telegram.org/bot8366582148:AAH82q0GljNWjDxYE4JYAriWXlZesVo1u4c/getUpdates
+                </a>
+              </li>
               <li>Cari objek respon JSON terbaru, lalu temukan teks <code>"file_id"</code> di dalam bagian <code>"document"</code>.
                 <br />
                 <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Contoh teks: <code>"file_id": "BQACAgUAAxkBAAIB..."</code></span>
