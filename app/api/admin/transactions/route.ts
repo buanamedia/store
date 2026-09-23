@@ -16,8 +16,8 @@ export async function GET(request: Request) {
     let transactions: any[] = [];
 
     try {
-      // Ambil data transaksi dari Firestore koleksi 'transactions'
-      const snapshot = await db.collection("transactions").get();
+      // Mengambil data dari koleksi 'orders' di Firestore
+      const snapshot = await db.collection("orders").get();
 
       if (snapshot && snapshot.docs) {
         transactions = snapshot.docs.map((doc) => ({
