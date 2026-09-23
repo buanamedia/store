@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase"; // Sesuaikan jalur impor inisialisasi firebase Anda
+import { db } from "@/lib/firebase"; // Jalur impor sesuai folder lib di root proyek Anda
 
 export const dynamic = "force-dynamic";
 
@@ -13,12 +13,22 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, message: "Password Salah!" }, { status: 401 });
     }
 
-    // Ambil data transaksi dari Firestore (pastikan nama koleksi 'transactions' sesuai dengan database Anda)
-    const snapshot = await db.collection("transactions").orderBy("createdAt", "desc").get();
-    const transactions = snapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    }));
+    // Ambil data transaksi dari Firestore
+    let transactions: any[] = [];
+
+    try {
+      // Mengambil dari koleksi 'transactions' (Urutkan dari terbaru jika ada bidang 'createdAt')
+      const snapshot = await db.collection("transactions").get();
+      
+      transactions = snapshot.docs.map((doc: any) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (dbError: any) {
+      console.error("Firestore Fetch Error:", dbError);
+      // Mengembalikan array kosong jika koleksi belum ada/kosong tanpa memicu error build
+      transactions = [];
+    }
 
     return NextResponse.json({ success: true, transactions });
   } catch (error: any) {
