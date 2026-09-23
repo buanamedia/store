@@ -15,7 +15,8 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    const { serialKey, deviceId } = await request.json();
+    // 1. Ambil serialKey, deviceId, dan productId dari payload request
+    const { serialKey, deviceId, productId } = await request.json();
 
     if (!serialKey) {
       return NextResponse.json(
@@ -24,56 +25,119 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!productId) {
+      return NextResponse.json(
+        { valid: false, message: "Product ID aplikasi tidak valid / tidak dikirim!" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     const cleanKey = serialKey.trim().toUpperCase();
 
-    // 1. Cek Kunci di Collection 'licenses' (Lisensi yang sudah dibeli & di-generate)
+    // =========================================================================
+    // SKENARIO A: Cek di collection 'licenses' (Hasil Pembelian Transaksi / Auto)
+    // =========================================================================
     const licenseSnapshot = await db
       .collection("licenses")
       .where("licenseKey", "==", cleanKey)
       .limit(1)
       .get();
 
-    if (licenseSnapshot.empty) {
-      return NextResponse.json(
-        { valid: false, message: "Serial Key tidak terdaftar atau belum diaktivasi!" },
-        { status: 200, headers: corsHeaders }
-      );
-    }
+    if (!licenseSnapshot.empty) {
+      const licenseDoc = licenseSnapshot.docs[0];
+      const licenseData = licenseDoc.data();
 
-    const licenseDoc = licenseSnapshot.docs[0];
-    const licenseData = licenseDoc.data();
-
-    // 2. Cek Status Lisensi
-    if (licenseData.status !== "ACTIVE") {
-      return NextResponse.json(
-        { valid: false, message: "Lisensi ini telah dinonaktifkan oleh Admin!" },
-        { status: 200, headers: corsHeaders }
-      );
-    }
-
-    // 3. Logika Bind Perangkat (Device Binding)
-    let deviceList: string[] = Array.isArray(licenseData.deviceIds) ? licenseData.deviceIds : [];
-    const maxDevices = licenseData.maxDevices || 1;
-
-    if (deviceId && !deviceList.includes(deviceId)) {
-      if (deviceList.length >= maxDevices) {
+      // VALIDASI UTAMA: Pastikan produk ID lisensi sesuai dengan produk ID ekstensi
+      if (licenseData.productId !== productId) {
         return NextResponse.json(
-          { valid: false, message: `Lisensi telah mencapai batas maksimal (${maxDevices} Device)!` },
+          { valid: false, message: "Serial Key ini terdaftar untuk produk lain dan tidak dapat digunakan di aplikasi ini!" },
           { status: 200, headers: corsHeaders }
         );
       }
 
-      deviceList.push(deviceId);
-      await licenseDoc.ref.update({ deviceIds: deviceList });
+      // Cek status lisensi
+      if (licenseData.status !== "ACTIVE") {
+        return NextResponse.json(
+          { valid: false, message: "Lisensi ini telah dinonaktifkan oleh Admin!" },
+          { status: 200, headers: corsHeaders }
+        );
+      }
+
+      // Logika Bind Perangkat (Device Binding)
+      let deviceList: string[] = Array.isArray(licenseData.deviceIds) ? licenseData.deviceIds : [];
+      const maxDevices = licenseData.maxDevices || 1;
+
+      if (deviceId && !deviceList.includes(deviceId)) {
+        if (deviceList.length >= maxDevices) {
+          return NextResponse.json(
+            { valid: false, message: `Lisensi telah mencapai batas maksimal (${maxDevices} Device)!` },
+            { status: 200, headers: corsHeaders }
+          );
+        }
+
+        deviceList.push(deviceId);
+        await licenseDoc.ref.update({ deviceIds: deviceList });
+      }
+
+      return NextResponse.json(
+        {
+          valid: true,
+          licenseKey: cleanKey,
+          message: "Aktivasi lisensi berhasil & terverifikasi!",
+        },
+        { headers: corsHeaders }
+      );
     }
 
+    // =========================================================================
+    // SKENARIO B: Cek di collection 'products' (Stok Lisensi Input Manual Admin)
+    // =========================================================================
+    const productDoc = await db.collection("products").doc(productId).get();
+
+    if (productDoc.exists) {
+      const productData = productDoc.data();
+
+      if (productData?.hasLicense !== false && Array.isArray(productData?.manualKeys)) {
+        const manualKeys: string[] = productData.manualKeys.map((k: string) => k.trim().toUpperCase());
+
+        // Cek apakah key ada di dalam array manualKeys milik produk ini
+        if (manualKeys.includes(cleanKey)) {
+          // Logika Binding Perangkat untuk Stok Manual Produk
+          let registeredDevices: string[] = Array.isArray(productData.registeredDevices) 
+            ? productData.registeredDevices 
+            : [];
+          const maxDevices = productData.maxDevices || 1;
+
+          if (deviceId && !registeredDevices.includes(deviceId)) {
+            if (registeredDevices.length >= maxDevices) {
+              return NextResponse.json(
+                { valid: false, message: `Stok lisensi ini telah mencapai batas maksimal (${maxDevices} Device)!` },
+                { status: 200, headers: corsHeaders }
+              );
+            }
+
+            registeredDevices.push(deviceId);
+            await productDoc.ref.update({ registeredDevices });
+          }
+
+          return NextResponse.json(
+            {
+              valid: true,
+              licenseKey: cleanKey,
+              message: "Aktivasi Serial Key produk berhasil!",
+            },
+            { headers: corsHeaders }
+          );
+        }
+      }
+    }
+
+    // =========================================================================
+    // SKENARIO C: Key Tidak Ditemukan Sama Sekali
+    // =========================================================================
     return NextResponse.json(
-      {
-        valid: true,
-        licenseKey: cleanKey,
-        message: "Aktivasi berhasil & terverifikasi!",
-      },
-      { headers: corsHeaders }
+      { valid: false, message: "Serial Key tidak terdaftar atau tidak sesuai dengan produk ini!" },
+      { status: 200, headers: corsHeaders }
     );
 
   } catch (error: any) {
