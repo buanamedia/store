@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-// Impor db firestore Anda di sini jika menggunakan Firebase
-// import { db } from "@/lib/firebase"; 
+import { db } from "@/lib/firebase"; // Sesuaikan jalur impor inisialisasi firebase Anda
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +13,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, message: "Password Salah!" }, { status: 401 });
     }
 
-    // Ambil data transaksi dari Firestore (sesuaikan dengan koleksi database Anda)
-    // const snapshot = await db.collection("transactions").orderBy("createdAt", "desc").get();
-    // const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    // Contoh data dummy jika belum terhubung ke database transaksi:
-    const transactions: any[] = [];
+    // Ambil data transaksi dari Firestore (pastikan nama koleksi 'transactions' sesuai dengan database Anda)
+    const snapshot = await db.collection("transactions").orderBy("createdAt", "desc").get();
+    const transactions = snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    }));
 
     return NextResponse.json({ success: true, transactions });
   } catch (error: any) {
