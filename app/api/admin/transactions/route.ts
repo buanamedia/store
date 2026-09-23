@@ -3,6 +3,7 @@ import { db } from "@/lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
 
+// GET: Ambil Semua Transaksi dari Koleksi 'orders'
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -16,7 +17,6 @@ export async function GET(request: Request) {
     let transactions: any[] = [];
 
     try {
-      // Mengambil data dari koleksi 'orders' di Firestore
       const snapshot = await db.collection("orders").get();
 
       if (snapshot && snapshot.docs) {
@@ -31,6 +31,29 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ success: true, transactions });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}
+
+// DELETE: Hapus Transaksi Berdasarkan ID Dokumen di Koleksi 'orders'
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const password = searchParams.get("password");
+    const id = searchParams.get("id");
+
+    if (!password || password !== process.env.ADMIN_PASSWORD) {
+      return NextResponse.json({ success: false, message: "Password Salah!" }, { status: 401 });
+    }
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: "ID Transaksi tidak ditemukan." }, { status: 400 });
+    }
+
+    await db.collection("orders").doc(id).delete();
+
+    return NextResponse.json({ success: true, message: `Transaksi ${id} berhasil dihapus.` });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
