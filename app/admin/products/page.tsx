@@ -169,6 +169,25 @@ export default function ProductsAndTransactionsPage() {
     }
   };
 
+  const handleDeleteTransaction = async (transactionId: string, refOrId: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus transaksi '${refOrId}'?`)) return;
+
+    try {
+      const res = await fetch(`/api/admin/transactions?id=${encodeURIComponent(transactionId)}&password=${encodeURIComponent(adminPassword)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert(`Transaksi '${refOrId}' berhasil dihapus!`);
+        loadTransactions(adminPassword);
+      } else {
+        alert(`Gagal menghapus transaksi: ${data.message}`);
+      }
+    } catch (err: any) {
+      alert("Error saat menghapus transaksi: " + err.message);
+    }
+  };
+
   const handleOpenEditModal = (product: any) => {
     setEditingProduct(product);
     setEditName(product.name || "");
@@ -293,6 +312,7 @@ export default function ProductsAndTransactionsPage() {
                   <table style={{ width: "100%", textAlign: "left", fontSize: "0.85rem" }}>
                     <thead>
                       <tr style={{ borderBottom: "1px solid #334155", color: "#94a3b8" }}>
+                        <th style={{ padding: "12px 10px", width: "40px" }}>No</th>
                         <th style={{ padding: "12px 10px" }}>ID Produk</th>
                         <th style={{ padding: "12px 10px" }}>Nama Produk</th>
                         <th style={{ padding: "12px 10px" }}>Harga</th>
@@ -302,8 +322,9 @@ export default function ProductsAndTransactionsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {products.map((p) => (
+                      {products.map((p, index) => (
                         <tr key={p.id} style={{ borderBottom: "1px solid #334155" }}>
+                          <td style={{ padding: "12px 10px", color: "#94a3b8", fontWeight: "bold" }}>{index + 1}</td>
                           <td style={{ padding: "12px 10px", fontWeight: "bold", color: "#38bdf8" }}>{p.id}</td>
                           <td style={{ padding: "12px 10px" }}>{p.name}</td>
                           <td style={{ padding: "12px 10px", color: "#10b981", fontWeight: "bold" }}>Rp {Number(p.price || 0).toLocaleString("id-ID")}</td>
@@ -348,18 +369,21 @@ export default function ProductsAndTransactionsPage() {
                   <table style={{ width: "100%", textAlign: "left", fontSize: "0.85rem" }}>
                     <thead>
                       <tr style={{ borderBottom: "1px solid #334155", color: "#94a3b8" }}>
+                        <th style={{ padding: "12px 10px", width: "40px" }}>No</th>
                         <th style={{ padding: "12px 10px" }}>ID Transaksi / Ref</th>
                         <th style={{ padding: "12px 10px" }}>Pelanggan</th>
                         <th style={{ padding: "12px 10px" }}>Produk</th>
                         <th style={{ padding: "12px 10px" }}>Total Nominal</th>
                         <th style={{ padding: "12px 10px" }}>Status</th>
                         <th style={{ padding: "12px 10px" }}>Tanggal</th>
+                        <th style={{ padding: "12px 10px", textAlign: "right" }}>Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {transactions.map((tx) => (
+                      {transactions.map((tx, index) => (
                         <tr key={tx.id || tx.reference} style={{ borderBottom: "1px solid #334155" }}>
-                          <td style={{ padding: "12px 10px", fontFamily: "monospace", color: "#38bdf8" }}>{tx.reference || tx.id}</td>
+                          <td style={{ padding: "12px 10px", color: "#94a3b8", fontWeight: "bold" }}>{index + 1}</td>
+                          <td style={{ padding: "12px 10px", fontFamily: "monospace", color: "#38bdf8" }}>{tx.invoiceNumber || tx.reference || tx.id}</td>
                           <td style={{ padding: "12px 10px" }}>
                             <div><strong>{tx.customerName || "-"}</strong></div>
                             <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{tx.customerEmail || "-"}</div>
@@ -373,6 +397,23 @@ export default function ProductsAndTransactionsPage() {
                           </td>
                           <td style={{ padding: "12px 10px", color: "#cbd5e1", fontSize: "0.8rem" }}>
                             {tx.createdAt ? new Date(tx.createdAt).toLocaleString("id-ID") : "-"}
+                          </td>
+                          <td style={{ padding: "12px 10px", textAlign: "right" }}>
+                            <button
+                              onClick={() => handleDeleteTransaction(tx.id, tx.invoiceNumber || tx.reference || tx.id)}
+                              style={{
+                                background: "#ef4444",
+                                color: "#fff",
+                                border: "none",
+                                padding: "6px 12px",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: "0.75rem",
+                                fontWeight: "bold"
+                              }}
+                            >
+                              🗑 Hapus
+                            </button>
                           </td>
                         </tr>
                       ))}
