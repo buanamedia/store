@@ -15,7 +15,6 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    // 1. Ambil serialKey, deviceId, dan productId dari payload request
     const { serialKey, deviceId, productId } = await request.json();
 
     if (!serialKey) {
@@ -27,7 +26,7 @@ export async function POST(request: Request) {
 
     if (!productId) {
       return NextResponse.json(
-        { valid: false, message: "Product ID aplikasi tidak valid / tidak dikirim!" },
+        { valid: false, message: "Product ID tidak valid / tidak dikirim!" },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -35,7 +34,7 @@ export async function POST(request: Request) {
     const cleanKey = serialKey.trim().toUpperCase();
 
     // =========================================================================
-    // SKENARIO A: Cek di collection 'licenses' (Hasil Pembelian Transaksi / Auto)
+    // SKENARIO A: Cek di collection 'licenses' (Pembelian Otomatis Store)
     // =========================================================================
     const licenseSnapshot = await db
       .collection("licenses")
@@ -47,23 +46,20 @@ export async function POST(request: Request) {
       const licenseDoc = licenseSnapshot.docs[0];
       const licenseData = licenseDoc.data();
 
-      // VALIDASI UTAMA: Pastikan produk ID lisensi sesuai dengan produk ID ekstensi
       if (licenseData.productId !== productId) {
         return NextResponse.json(
-          { valid: false, message: "Serial Key ini terdaftar untuk produk lain dan tidak dapat digunakan di aplikasi ini!" },
+          { valid: false, message: "Serial Key ini terdaftar untuk produk lain!" },
           { status: 200, headers: corsHeaders }
         );
       }
 
-      // Cek status lisensi
       if (licenseData.status !== "ACTIVE" && licenseData.is_active === false) {
         return NextResponse.json(
-          { valid: false, message: "Lisensi ini telah dinonaktifkan oleh Admin!" },
+          { valid: false, message: "Lisensi ini telah dinonaktifkan!" },
           { status: 200, headers: corsHeaders }
         );
       }
 
-      // Logika Bind Perangkat (Device Binding)
       let deviceList: string[] = Array.isArray(licenseData.deviceIds) ? licenseData.deviceIds : [];
       const maxDevices = licenseData.maxDevices || 1;
 
@@ -90,7 +86,7 @@ export async function POST(request: Request) {
     }
 
     // =========================================================================
-    // SKENARIO B: Cek di collection 'products' (Stok Lisensi Input Manual Admin)
+    // SKENARIO B: Cek di collection 'products' (Stok Lisensi Input Manual)
     // =========================================================================
     const productDoc = await db.collection("products").doc(productId).get();
 
@@ -100,32 +96,39 @@ export async function POST(request: Request) {
       if (productData?.hasLicense !== false && Array.isArray(productData?.manualKeys)) {
         const manualKeys: string[] = productData.manualKeys.map((k: string) => k.trim().toUpperCase());
 
-        // Cek apakah key ada di dalam array manualKeys milik produk ini
         if (manualKeys.includes(cleanKey)) {
-          // PERBAIKAN: Menggunakan Objek Map agar device diikat PER-SERIAL KEY MANUAL
-          // Struktur data di Firestore: registeredManualDevices = { "TRBM-XXXX": ["deviceId_1"] }
           let registeredManualDevices: Record<string, string[]> = productData.registeredManualDevices || {};
+          let usedManualKeys: string[] = Array.isArray(productData.usedManualKeys) ? productData.usedManualKeys : [];
+
           let keyDeviceList: string[] = Array.isArray(registeredManualDevices[cleanKey]) 
             ? registeredManualDevices[cleanKey] 
             : [];
 
-          // Batas device per 1 Serial Key Manual (Default: 1 Device)
           const maxDevicesPerKey = 1;
 
           if (deviceId && !keyDeviceList.includes(deviceId)) {
             if (keyDeviceList.length >= maxDevicesPerKey) {
               return NextResponse.json(
-                { valid: false, message: `Serial Key '${cleanKey}' ini telah mencapai batas maksimal (${maxDevicesPerKey} Device)!` },
+                { valid: false, message: `Serial Key '${cleanKey}' telah digunakan di device lain!` },
                 { status: 200, headers: corsHeaders }
               );
             }
 
             keyDeviceList.push(deviceId);
             registeredManualDevices[cleanKey] = keyDeviceList;
-
-            // Simpan perubahan map perangkat per-serial key ke Firestore
-            await productDoc.ref.update({ registeredManualDevices });
           }
+
+          // Otomatis tandai kunci sebagai terpakai di usedManualKeys
+          if (!usedManualKeys.includes(cleanKey)) {
+            usedManualKeys.push(cleanKey);
+          }
+
+          // CATAT PERUBAHAN KE FIRESTORE DOKUMEN PRODUK
+          await productDoc.ref.update({
+            registeredManualDevices,
+            usedManualKeys,
+            updatedAt: new Date().toISOString()
+          });
 
           return NextResponse.json(
             {
@@ -140,10 +143,10 @@ export async function POST(request: Request) {
     }
 
     // =========================================================================
-    // SKENARIO C: Key Tidak Ditemukan Sama Sekali
+    // SKENARIO C: Key Tidak Ditemukan
     // =========================================================================
     return NextResponse.json(
-      { valid: false, message: "Serial Key tidak terdaftar atau tidak sesuai dengan produk ini!" },
+      { valid: false, message: "Serial Key tidak terdaftar atau tidak sesuai!" },
       { status: 200, headers: corsHeaders }
     );
 
