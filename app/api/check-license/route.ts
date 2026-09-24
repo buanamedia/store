@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       }
 
       // Cek status lisensi
-      if (licenseData.status !== "ACTIVE") {
+      if (licenseData.status !== "ACTIVE" && licenseData.is_active === false) {
         return NextResponse.json(
           { valid: false, message: "Lisensi ini telah dinonaktifkan oleh Admin!" },
           { status: 200, headers: corsHeaders }
@@ -102,22 +102,29 @@ export async function POST(request: Request) {
 
         // Cek apakah key ada di dalam array manualKeys milik produk ini
         if (manualKeys.includes(cleanKey)) {
-          // Logika Binding Perangkat untuk Stok Manual Produk
-          let registeredDevices: string[] = Array.isArray(productData.registeredDevices) 
-            ? productData.registeredDevices 
+          // PERBAIKAN: Menggunakan Objek Map agar device diikat PER-SERIAL KEY MANUAL
+          // Struktur data di Firestore: registeredManualDevices = { "TRBM-XXXX": ["deviceId_1"] }
+          let registeredManualDevices: Record<string, string[]> = productData.registeredManualDevices || {};
+          let keyDeviceList: string[] = Array.isArray(registeredManualDevices[cleanKey]) 
+            ? registeredManualDevices[cleanKey] 
             : [];
-          const maxDevices = productData.maxDevices || 1;
 
-          if (deviceId && !registeredDevices.includes(deviceId)) {
-            if (registeredDevices.length >= maxDevices) {
+          // Batas device per 1 Serial Key Manual (Default: 1 Device)
+          const maxDevicesPerKey = 1;
+
+          if (deviceId && !keyDeviceList.includes(deviceId)) {
+            if (keyDeviceList.length >= maxDevicesPerKey) {
               return NextResponse.json(
-                { valid: false, message: `Stok lisensi ini telah mencapai batas maksimal (${maxDevices} Device)!` },
+                { valid: false, message: `Serial Key '${cleanKey}' ini telah mencapai batas maksimal (${maxDevicesPerKey} Device)!` },
                 { status: 200, headers: corsHeaders }
               );
             }
 
-            registeredDevices.push(deviceId);
-            await productDoc.ref.update({ registeredDevices });
+            keyDeviceList.push(deviceId);
+            registeredManualDevices[cleanKey] = keyDeviceList;
+
+            // Simpan perubahan map perangkat per-serial key ke Firestore
+            await productDoc.ref.update({ registeredManualDevices });
           }
 
           return NextResponse.json(
