@@ -32,18 +32,18 @@ export default function AdminDashboardPage() {
   const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [type, setType] = useState("DOWNLOAD");
+  const [type, setType] = useState("DOWNLOAD"); // "DOWNLOAD" | "ACCESS" | "GESTUN"
   const [hasLicense, setHasLicense] = useState(true);
   const [licenseMode, setLicenseMode] = useState("AUTO");
   const [manualKeys, setManualKeys] = useState("");
   const [generatorApiUrl, setGeneratorApiUrl] = useState("");
   const [appUrl, setAppUrl] = useState("");
 
-  // Fitur Baru: Foto Produk & Carousel
+  // Foto Produk & Carousel
   const [imageUrl, setImageUrl] = useState("");
   const [showInCarousel, setShowInCarousel] = useState(true);
 
-  // Fitur Baru: Pengaturan Tampilan Toko (Layout Settings) & Nomor WA
+  // Pengaturan Tampilan Toko (Layout Settings) & Nomor WA
   const [headerTitle, setHeaderTitle] = useState(DEFAULT_SETTINGS.headerTitle);
   const [headerIcon, setHeaderIcon] = useState(DEFAULT_SETTINGS.headerIcon);
   const [gridColumns, setGridColumns] = useState(DEFAULT_SETTINGS.gridColumns);
@@ -83,10 +83,7 @@ export default function AdminDashboardPage() {
       } else {
         alert(data.message || "Password Salah!");
 
-        sessionStorage.removeItem(
-          "admin_session_pwd"
-        );
-
+        sessionStorage.removeItem("admin_session_pwd");
         setIsAuthenticated(false);
       }
     } catch (e: any) {
@@ -145,7 +142,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Fungsi Reset Pengaturan Layout ke Default / Bawaan
   const handleResetSettings = () => {
     if (confirm("Apakah Anda yakin ingin mengembalikan seluruh pengaturan layout ke standar bawaan?")) {
       setHeaderTitle(DEFAULT_SETTINGS.headerTitle);
@@ -161,10 +157,7 @@ export default function AdminDashboardPage() {
     e.preventDefault();
 
     if (adminPassword.trim().length > 0) {
-      sessionStorage.setItem(
-        "admin_session_pwd",
-        adminPassword
-      );
+      sessionStorage.setItem("admin_session_pwd", adminPassword);
 
       setIsAuthenticated(true);
       loadProducts(adminPassword);
@@ -185,7 +178,6 @@ export default function AdminDashboardPage() {
     });
   };
 
-  // Reset/Clear Form State
   const resetForm = () => {
     setIsEditing(false);
     setId("");
@@ -204,7 +196,6 @@ export default function AdminDashboardPage() {
     setFile(null);
   };
 
-  // Copy Snippet Kode Blogspot (2 Tombol Presisi Sama Tinggi & Teks 'Hubungi Admin')
   const copyBlogspotSnippet = (product: any) => {
     const formattedPrice = Number(product.price || 0).toLocaleString("id-ID");
     const waText = encodeURIComponent(`Halo Admin, saya ingin bertanya tentang produk '${product.name}' (${product.id}).`);
@@ -236,7 +227,6 @@ export default function AdminDashboardPage() {
     setTimeout(() => setCopiedId(null), 3000);
   };
 
-  // Fungsi Edit Cepat Harga Produk
   const handleEditPrice = async (product: any) => {
     const inputPrice = prompt(`Masukkan harga baru untuk produk '${product.name}' (Rp):`, product.price);
 
@@ -273,7 +263,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Fungsi Edit Seluruh Data Produk (Mengisi ulang Form)
   const handleEditFullProduct = (product: any) => {
     setIsEditing(true);
     setId(product.id || "");
@@ -300,7 +289,6 @@ export default function AdminDashboardPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Fungsi Hapus Produk dari Firestore & Telegram
   const handleDeleteProduct = async (productId: string, productName: string) => {
     if (!confirm(`Apakah Anda yakin ingin menghapus produk '${productName}' (${productId}) dari database & Telegram?`)) {
       return;
@@ -341,7 +329,7 @@ export default function AdminDashboardPage() {
             method: "POST",
             headers: { "Content-Type": "text/plain" },
             body: JSON.stringify({
-              secretKey: "buanamedia12066911", // Sesuaikan dengan SECRET_KEY Anda
+              secretKey: "buanamedia12066911",
               fileName: file.name,
               category: "ZIP",
               fileData: base64Data,
@@ -361,6 +349,7 @@ export default function AdminDashboardPage() {
       }
 
       const cleanPriceInput = parseInt(price.toString().replace(/\D/g, ""), 10) || 0;
+      const isGestun = type === "GESTUN";
 
       setLoadingStatus("Menyimpan konfigurasi produk ke Firestore...");
       const res = await fetch("/api/admin/products", {
@@ -372,14 +361,14 @@ export default function AdminDashboardPage() {
           name,
           price: cleanPriceInput,
           type,
-          hasLicense,
-          licenseMode,
+          hasLicense: isGestun ? false : hasLicense,
+          licenseMode: isGestun ? "AUTO" : licenseMode,
           manualKeys,
           generatorApiUrl,
           appUrl,
           imageUrl,
           showInCarousel,
-          telegramFileId: finalTelegramFileId,
+          telegramFileId: isGestun ? "" : finalTelegramFileId,
         }),
       });
 
@@ -388,7 +377,7 @@ export default function AdminDashboardPage() {
       if (res.ok && data.success) {
         setMessage({
           type: "success",
-          text: `Berhasil! Produk '${id}' tersimpan & siap digunakan. File ID: ${finalTelegramFileId || "N/A"}`
+          text: `Berhasil! Produk '${id}' tersimpan & siap digunakan.`
         });
         resetForm();
         loadProducts(adminPassword);
@@ -412,7 +401,6 @@ export default function AdminDashboardPage() {
         button { display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important; min-height: 32px !important; }
         a { text-decoration: none !important; }
 
-        /* Mobile Responsive adjustments */
         @media (max-width: 768px) {
           .dash-header {
             flex-direction: column !important;
@@ -460,7 +448,10 @@ export default function AdminDashboardPage() {
               <h1 style={{ fontSize: "1.3rem", margin: 0, color: "#38bdf8" }}>STORE Engine Dashboard</h1>
               <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>buanamedia.my.id</span>
             </div>
-            <div className="dash-header-actions" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            
+            {/* ACTION BUTTONS DI HEADER DASHBOARD */}
+            <div className="dash-header-actions" style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              {/* 1. TOMBOL HOME */}
               <a
                 href="https://buanamedia.my.id"
                 target="_blank"
@@ -469,17 +460,27 @@ export default function AdminDashboardPage() {
               >
                 🏠 Home
               </a>
+
+              {/* 2. TOMBOL GALERI (BERADA DI ANTARA HOME DAN PRODUK & TRANSAKSI) */}
+              <Link
+                href="/admin/gallery"
+                style={{ background: "#0284c7", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
+              >
+                📁 Cloud Gallery
+              </Link>
+
+              {/* 3. TOMBOL PRODUK & TRANSAKSI */}
               <Link
                 href="/admin/products"
                 style={{ background: "#10b981", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
               >
                 📦 Produk & Transaksi
               </Link>
+
+              {/* 4. TOMBOL LOGOUT */}
               <button
                 onClick={() => {
-                  sessionStorage.removeItem(
-                    "admin_session_pwd"
-                  );
+                  sessionStorage.removeItem("admin_session_pwd");
                   setIsAuthenticated(false);
                   setAdminPassword("");
                 }}
@@ -690,63 +691,70 @@ export default function AdminDashboardPage() {
                 >
                   <option value="DOWNLOAD">File Download / Software Installer</option>
                   <option value="ACCESS">Akses Portal Web / Aplikasi / SaaS</option>
+                  <option value="GESTUN">GESTUN / Tarik Tunai (Layanan Pencairan Dana)</option>
                 </select>
               </div>
 
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#e2e8f0", fontSize: "0.9rem" }}>
-                  <input
-                    type="checkbox"
-                    checked={hasLicense}
-                    onChange={(e) => setHasLicense(e.target.checked)}
-                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
-                  />
-                  Gunakan Kode Lisensi Unik?
-                </label>
-              </div>
-
-              {hasLicense && (
-                <div style={{ background: "#0f172a", padding: "16px", borderRadius: "8px", border: "1px solid #334155", marginBottom: "20px" }}>
-                  <label style={{ display: "block", fontSize: "0.85rem", color: "#38bdf8", marginBottom: "8px", fontWeight: "bold" }}>Metode Sumber Lisensi Serial Key:</label>
-                  <select
-                    value={licenseMode}
-                    onChange={(e) => setLicenseMode(e.target.value)}
-                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", marginBottom: licenseMode !== "AUTO" ? "12px" : "0" }}
-                  >
-                    <option value="AUTO">1. Generate Otomatis (Default STORE Engine)</option>
-                    <option value="MANUAL">2. Input Manual Serial Key (Stok Lisensi Saya)</option>
-                    <option value="GENERATOR">3. External Keygen API (Hubungkan URL Generator)</option>
-                  </select>
-
-                  {licenseMode === "MANUAL" && (
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Daftar Serial Key (Pisahkan dengan baris baru / koma):</label>
-                      <textarea
-                        rows={4}
-                        placeholder={"CLIP-KEY-111\nCLIP-KEY-222\nCLIP-KEY-333"}
-                        value={manualKeys}
-                        onChange={(e) => setManualKeys(e.target.value)}
-                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
-                      />
-                    </div>
-                  )}
-
-                  {licenseMode === "GENERATOR" && (
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>URL External Keygen Generator API:</label>
+              {/* TAMPILAN KODE LISENSI SONYA BERLAKU JIKA BUKAN GESTUN */}
+              {type !== "GESTUN" && (
+                <>
+                  <div style={{ marginBottom: "16px" }}>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#e2e8f0", fontSize: "0.9rem" }}>
                       <input
-                        type="url"
-                        placeholder="https://api.keygen-anda.com/generate"
-                        value={generatorApiUrl}
-                        onChange={(e) => setGeneratorApiUrl(e.target.value)}
-                        style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
+                        type="checkbox"
+                        checked={hasLicense}
+                        onChange={(e) => setHasLicense(e.target.checked)}
+                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
                       />
+                      Gunakan Kode Lisensi Unik?
+                    </label>
+                  </div>
+
+                  {hasLicense && (
+                    <div style={{ background: "#0f172a", padding: "16px", borderRadius: "8px", border: "1px solid #334155", marginBottom: "20px" }}>
+                      <label style={{ display: "block", fontSize: "0.85rem", color: "#38bdf8", marginBottom: "8px", fontWeight: "bold" }}>Metode Sumber Lisensi Serial Key:</label>
+                      <select
+                        value={licenseMode}
+                        onChange={(e) => setLicenseMode(e.target.value)}
+                        style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", marginBottom: licenseMode !== "AUTO" ? "12px" : "0" }}
+                      >
+                        <option value="AUTO">1. Generate Otomatis (Default STORE Engine)</option>
+                        <option value="MANUAL">2. Input Manual Serial Key (Stok Lisensi Saya)</option>
+                        <option value="GENERATOR">3. External Keygen API (Hubungkan URL Generator)</option>
+                      </select>
+
+                      {licenseMode === "MANUAL" && (
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Daftar Serial Key (Pisahkan dengan baris baru / koma):</label>
+                          <textarea
+                            rows={4}
+                            placeholder={"CLIP-KEY-111\nCLIP-KEY-222\nCLIP-KEY-333"}
+                            value={manualKeys}
+                            onChange={(e) => setManualKeys(e.target.value)}
+                            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
+                          />
+                        </div>
+                      )}
+
+                      {licenseMode === "GENERATOR" && (
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>URL External Keygen Generator API:</label>
+                          <input
+                            type="url"
+                            placeholder="https://api.keygen-anda.com/generate"
+                            value={generatorApiUrl}
+                            onChange={(e) => setGeneratorApiUrl(e.target.value)}
+                            style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
+                </>
               )}
 
-              {type === "ACCESS" ? (
+              {/* TAMPILAN KHUSUS BERDASARKAN TIPE PENJUALAN */}
+              {type === "ACCESS" && (
                 <div style={{ marginBottom: "20px" }}>
                   <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "6px" }}>URL Portal Web / Aplikasi (`appUrl`)</label>
                   <input
@@ -758,7 +766,9 @@ export default function AdminDashboardPage() {
                     style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
                   />
                 </div>
-              ) : (
+              )}
+
+              {type === "DOWNLOAD" && (
                 <div style={{ marginBottom: "20px", background: "#0f172a", padding: "16px", borderRadius: "8px", border: "1px solid #334155" }}>
                   <label style={{ display: "block", fontSize: "0.85rem", color: "#38bdf8", marginBottom: "12px", fontWeight: "bold" }}>Metode Pemasok File Produk:</label>
 
@@ -870,7 +880,7 @@ export default function AdminDashboardPage() {
                           {p.showInCarousel !== false ? "✅ Tampil" : "❌ Sembunyi"}
                         </td>
                         <td style={{ padding: "12px 10px", color: "#cbd5e1", verticalAlign: "middle" }}>
-                          {p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
+                          {p.type === "GESTUN" ? "Gestun (Tanpa Lisensi)" : p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
                         </td>
                         <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
