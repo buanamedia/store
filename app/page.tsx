@@ -400,8 +400,8 @@ export default function HomePage() {
     src="https://www.freeiconspng.com/uploads/logo-whatsapp-png-transparent-background-8.png"
     alt="WhatsApp Logo"
     style={{
-      width: "32px",
-      height: "32px",
+      width: "64px",
+      height: "64px",
       objectFit: "contain",
     }}
   />
