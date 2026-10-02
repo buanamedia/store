@@ -24,6 +24,7 @@ const BANK_OPTIONS = [
   "DANA",
   "ShopeePay",
   "LinkAja",
+  "LAINNYA", // Opsi Tambahan untuk Input Manual
 ];
 
 const SERVICE_FEE_PERCENT = 0.07;
@@ -37,6 +38,7 @@ export default function GestunPage() {
   const [paymentMethod, setPaymentMethod] = useState("QRIS");
 
   const [bankName, setBankName] = useState("BCA");
+  const [customBankName, setCustomBankName] = useState(""); // State untuk input manual bank lain
   const [accountNumber, setAccountNumber] = useState("");
   const [accountHolder, setAccountHolder] = useState("");
 
@@ -62,7 +64,9 @@ export default function GestunPage() {
       return;
     }
 
-    if (!customerName || !customerPhone || !customerEmail || rawAmount < 20000 || !bankName || !accountNumber || !accountHolder) {
+    const finalBankName = bankName === "LAINNYA" ? customBankName.trim() : bankName;
+
+    if (!customerName || !customerPhone || !customerEmail || rawAmount < 20000 || !finalBankName || !accountNumber || !accountHolder) {
       setErrorMessage("Mohon lengkapi semua data pencairan.");
       return;
     }
@@ -81,7 +85,7 @@ export default function GestunPage() {
           amount: rawAmount,
           paymentMethod,
           gestunDetails: {
-            bankName,
+            bankName: finalBankName,
             accountNumber,
             accountHolder,
             adminFee,
@@ -121,18 +125,18 @@ export default function GestunPage() {
 
         {errorMessage && (
           <div style={{ background: "rgba(239, 68, 68, 0.2)", border: "1px solid #ef4444", color: "#fca5a5", padding: "10px 14px", borderRadius: "8px", fontSize: "0.85rem", marginBottom: "16px" }}>
-            ⚠️ {errorMessage}
+            ⚠️️ {errorMessage}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
           {/* Data Pemohon */}
           <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Nama Lengkap</label>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Nama Lengkap Pemohon</label>
             <input
               type="text"
               required
-              placeholder="Contoh: Agus Siahaan"
+              placeholder="Contoh: Fulan Suramadan"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
@@ -144,7 +148,7 @@ export default function GestunPage() {
             <input
               type="tel"
               required
-              placeholder="Contoh: 081234567890"
+              placeholder="Contoh: 0899123456789"
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
               style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
@@ -152,11 +156,11 @@ export default function GestunPage() {
           </div>
 
           <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Email</label>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Email Penerima Bukti</label>
             <input
               type="email"
               required
-              placeholder="Contoh: agus@buanamedia.my.id"
+              placeholder="Contoh: fulan.demo@example.com"
               value={customerEmail}
               onChange={(e) => setCustomerEmail(e.target.value)}
               style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
@@ -164,7 +168,7 @@ export default function GestunPage() {
           </div>
 
           <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Metode Bayar</label>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Metode Bayar / Pencairan via</label>
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
@@ -183,36 +187,53 @@ export default function GestunPage() {
               required
               min="20000"
               step="1000"
-              placeholder="Contoh: 100000"
+              placeholder="Contoh: 150000"
               value={amountInput}
               onChange={(e) => setAmountInput(e.target.value)}
               style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #0284c7", background: "#0f172a", color: "#38bdf8", fontSize: "1.1rem", fontWeight: "bold", boxSizing: "border-box" }}
             />
           </div>
 
-          {/* Tujuan Rekening / E-Wallet */}
+          {/* Tujuan Rekening / E-Wallet dengan Dropdown & Option Manual */}
           <div style={{ background: "#0f172a", padding: "14px", borderRadius: "10px", border: "1px solid #334155", marginBottom: "16px" }}>
             <span style={{ fontSize: "0.8rem", color: "#38bdf8", display: "block", fontWeight: "bold", marginBottom: "8px" }}>Tujuan Rekening / E-Wallet Pencairan</span>
             
             <div style={{ marginBottom: "8px" }}>
-              <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>Nama Bank / E-Wallet</label>
+              <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>Pilih Bank / E-Wallet</label>
               <select
                 value={bankName}
                 onChange={(e) => setBankName(e.target.value)}
                 style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
               >
                 {BANK_OPTIONS.map((bank) => (
-                  <option key={bank} value={bank}>{bank}</option>
+                  <option key={bank} value={bank}>
+                    {bank === "LAINNYA" ? "Lainnya (Input Manual)" : bank}
+                  </option>
                 ))}
               </select>
             </div>
+
+            {/* Input Manual Nama Bank/E-Wallet jika 'LAINNYA' dipilih */}
+            {bankName === "LAINNYA" && (
+              <div style={{ marginBottom: "8px" }}>
+                <label style={{ display: "block", fontSize: "0.75rem", color: "#38bdf8", marginBottom: "4px" }}>Masukkan Nama Bank / E-Wallet Manual</label>
+                <input
+                  type="text"
+                  required={bankName === "LAINNYA"}
+                  placeholder="Contoh: Bank Neo Commerce / Allo Bank"
+                  value={customBankName}
+                  onChange={(e) => setCustomBankName(e.target.value)}
+                  style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #0284c7", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
+                />
+              </div>
+            )}
 
             <div style={{ marginBottom: "8px" }}>
               <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>No. Rekening / No. E-Wallet</label>
               <input
                 type="text"
                 required
-                placeholder="Contoh: 1234567890"
+                placeholder="Contoh: 9876543210"
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
                 style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
@@ -224,7 +245,7 @@ export default function GestunPage() {
               <input
                 type="text"
                 required
-                placeholder="Contoh: Agus Siahaan"
+                placeholder="Contoh: Fulan Suramadan"
                 value={accountHolder}
                 onChange={(e) => setAccountHolder(e.target.value)}
                 style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
@@ -282,7 +303,7 @@ export default function GestunPage() {
             </label>
           </div>
 
-          {/* Tombol Submit (Disabled jika belum dicentang) */}
+          {/* Tombol Submit */}
           <button
             type="submit"
             disabled={loading || !agreedTerms}
@@ -314,7 +335,9 @@ export default function GestunPage() {
             </div>
 
             <div style={{ fontSize: "0.85rem", color: "#cbd5e1", lineHeight: "1.6" }}>
-              <p style={{ marginTop: 0 }}>Dengan melanjutkan transaksi Gestun / Tarik Tunai di STORE Engine, Anda menyatakan dan menyetujui ketentuan berikut:</p>
+              <p style={{ marginTop: 0 }}>
+                Dengan melanjutkan transaksi Gestun / Tarik Tunai di <strong>Buana Media Store</strong>, Anda menyatakan dan menyetujui ketentuan berikut:
+              </p>
               
               <ol style={{ paddingLeft: "20px", margin: "12px 0" }}>
                 <li style={{ marginBottom: "8px" }}>
@@ -324,7 +347,7 @@ export default function GestunPage() {
                   <strong>Validitas Rekening Penerima:</strong> Pastikan Nama Bank, Nomor Rekening/E-Wallet, dan Nama Pemilik Rekening sesuai dan aktif. Kesalahan penginputan nomor rekening sepenuhnya menjadi tanggung jawab pemohon.
                 </li>
                 <li style={{ marginBottom: "8px" }}>
-                  <strong>Proses Pencairan Otomatis:</strong> Dana bersih (*Net Payout*) akan ditransfer otomatis ke rekening penerima dalam waktu <strong>1 - 5 menit</strong> setelah status pembayaran terkonfirmasi LUNAS oleh Payment Gateway.
+                  <strong>Proses Pencairan Otomatis:</strong> Dana bersih (*Net Payout*) akan diproses pencairannya secara otomatis menjadi <strong>1x24 jam</strong> setelah status pembayaran terkonfirmasi LUNAS oleh Payment Gateway.
                 </li>
                 <li style={{ marginBottom: "8px" }}>
                   <strong>Skema Biaya Potongan:</strong> Transaksi dikenakan biaya Gateway sesuai kanal bayar, Biaya Layanan Gestun sebesar 7%, dan Biaya Transfer Bank sebesar Rp 2.500.
