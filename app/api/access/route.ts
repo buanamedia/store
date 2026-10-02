@@ -69,6 +69,16 @@ export async function GET(request: Request) {
     const telegramFileId = productData?.telegramFileId || "";
     const targetAppUrl = productData?.appUrl || "#";
 
+    // Format Judul & Harga agar tidak double
+    const rawProductName = orderData.productName || "Gestun Tarik Tunai";
+    const amountVal = orderData.amount || orderData.price || 0;
+    const formattedAmount = Number(amountVal).toLocaleString("id-ID");
+
+    // Jika productName sudah mengandung "- Rp", gunakan productName langsung.
+    const displayTitle = rawProductName.includes("- Rp")
+      ? rawProductName
+      : `${rawProductName} - Rp ${formattedAmount}`;
+
     // 4. Kelola / Buat Lisensi Jika Memang Diperlukan (Bukan Gestun)
     let licenseKey = "";
     if (hasLicense) {
@@ -142,7 +152,7 @@ export async function GET(request: Request) {
         `Halo Admin, saya ingin konfirmasi pencairan Tarik Tunai / Gestun.\n\n` +
           `📌 Invoice: ${invoiceNumber}\n` +
           `👤 Nama Pemohon: ${orderData.customerName || "-"}\n` +
-          `💰 Nominal: Rp ${Number(orderData.amount || orderData.price || 0).toLocaleString("id-ID")}\n` +
+          `💰 Nominal: Rp ${formattedAmount}\n` +
           `🏦 Rekening Tujuan: ${orderData.gestunDetails?.bankName || "-"} (${orderData.gestunDetails?.accountNumber || "-"}) a.n ${orderData.gestunDetails?.accountHolder || "-"}\n\n` +
           `Mohon segera diproses pencairannya. Terima kasih!`
       );
@@ -201,6 +211,9 @@ export async function GET(request: Request) {
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); 
             text-align: center; 
           }
+          .badge-container {
+            margin-bottom: 20px;
+          }
           .badge { 
             background: #10b981; 
             color: #fff; 
@@ -209,7 +222,7 @@ export async function GET(request: Request) {
             font-weight: bold; 
             font-size: 0.85rem; 
             display: inline-block; 
-            margin-bottom: 16px; 
+            letter-spacing: 0.5px;
           }
           h1 { font-size: 1.5rem; margin: 0 0 8px 0; color: #fff; }
           p.sub { color: #94a3b8; font-size: 0.95rem; margin: 0 0 24px 0; }
@@ -253,8 +266,10 @@ export async function GET(request: Request) {
       </head>
       <body>
         <div class="card">
-          <span class="badge">PEMBAYARAN BERHASIL</span>
-          <h1>${orderData.productName || "Gestun Tarik Tunai"} - Rp ${Number(orderData.amount || orderData.price || 0).toLocaleString("id-ID")}</h1>
+          <div class="badge-container">
+            <span class="badge">PEMBAYARAN BERHASIL</span>
+          </div>
+          <h1>${displayTitle}</h1>
           <p class="sub">Terima kasih! Pembelian Anda telah dikonfirmasi.</p>
           
           ${licenseHtml}
