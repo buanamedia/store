@@ -450,6 +450,9 @@ export default function AdminDashboardPage() {
           .dash-card {
             padding: 16px !important;
           }
+          .settings-row-2 {
+            grid-template-columns: 1fr !important;
+          }
         }
       `}</style>
 
@@ -521,7 +524,7 @@ export default function AdminDashboardPage() {
 
           {/* FORM PENGATURAN TAMPILAN HALAMAN UTAMA */}
           <div className="dash-card" style={{ background: "#1e293b", padding: "24px", borderRadius: "16px", border: "1px solid #0284c7", marginBottom: "32px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
               <h2 style={{ fontSize: "1.1rem", color: "#38bdf8", margin: 0 }}>⚙️ Pengaturan Layout & Tampilan Halaman Utama</h2>
               <button
                 type="button"
@@ -532,78 +535,85 @@ export default function AdminDashboardPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveSettings} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Icon Header</label>
-                <input
-                  type="text"
-                  value={headerIcon}
-                  onChange={(e) => setHeaderIcon(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
-                />
+            <form onSubmit={handleSaveSettings} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* BARIS 1: Icon Header, Judul Header, Jumlah Kolom, Posisi Widget */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Icon Header</label>
+                  <input
+                    type="text"
+                    value={headerIcon}
+                    onChange={(e) => setHeaderIcon(e.target.value)}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Judul Header</label>
+                  <input
+                    type="text"
+                    value={headerTitle}
+                    onChange={(e) => setHeaderTitle(e.target.value)}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Jumlah Kolom Grid Produk (1 - 5)</label>
+                  <select
+                    value={gridColumns}
+                    onChange={(e) => setGridColumns(Number(e.target.value))}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
+                  >
+                    <option value={1}>1 Kolom</option>
+                    <option value={2}>2 Kolom</option>
+                    <option value={3}>3 Kolom</option>
+                    <option value={4}>4 Kolom</option>
+                    <option value={5}>5 Kolom</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Posisi Widget Promosi Gestun</label>
+                  <select
+                    value={widgetPosition}
+                    onChange={(e) => setWidgetPosition(e.target.value)}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
+                  >
+                    <option value="BELOW_CAROUSEL">Di Bawah Carousel</option>
+                    <option value="ABOVE_CAROUSEL">Di Atas Carousel</option>
+                    <option value="HIDDEN">Sembunyikan Widget</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Judul Header</label>
-                <input
-                  type="text"
-                  value={headerTitle}
-                  onChange={(e) => setHeaderTitle(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Jumlah Kolom Grid Produk (1 - 5)</label>
-                <select
-                  value={gridColumns}
-                  onChange={(e) => setGridColumns(Number(e.target.value))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
-                >
-                  <option value={1}>1 Kolom</option>
-                  <option value={2}>2 Kolom</option>
-                  <option value={3}>3 Kolom</option>
-                  <option value={4}>4 Kolom</option>
-                  <option value={5}>5 Kolom</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Posisi Widget Promosi Gestun</label>
-                <select
-                  value={widgetPosition}
-                  onChange={(e) => setWidgetPosition(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
-                >
-                  <option value="BELOW_CAROUSEL">Di Bawah Carousel</option>
-                  <option value="ABOVE_CAROUSEL">Di Atas Carousel</option>
-                  <option value="HIDDEN">Sembunyikan Widget</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", color: "#38bdf8", marginBottom: "4px", fontWeight: "bold" }}>Nomor WhatsApp Admin</label>
-                <input
-                  type="text"
-                  placeholder="081414159500"
-                  value={adminWhatsapp}
-                  onChange={(e) => setAdminWhatsapp(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #0284c7", background: "#0f172a", color: "#38bdf8", fontWeight: "bold" }}
-                />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Teks Isi Footer</label>
-                <input
-                  type="text"
-                  value={footerText}
-                  onChange={(e) => setFooterText(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
-                />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <button
-                  type="submit"
-                  disabled={savingSettings}
-                  style={{ padding: "10px 20px", background: "#0284c7", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}
-                >
-                  {savingSettings ? "Menyimpan Pengaturan..." : "Simpan Pengaturan Tampilan"}
-                </button>
+
+              {/* BARIS 2: Nomor WhatsApp, Teks Footer, dan Tombol Simpan (Sejajar 1 Baris) */}
+              <div className="settings-row-2" style={{ display: "grid", gridTemplateColumns: "1fr 2fr auto", gap: "16px", alignItems: "end" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#38bdf8", marginBottom: "4px", fontWeight: "bold" }}>Nomor WhatsApp Admin</label>
+                  <input
+                    type="text"
+                    placeholder="081414159500"
+                    value={adminWhatsapp}
+                    onChange={(e) => setAdminWhatsapp(e.target.value)}
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: "6px", border: "1px solid #0284c7", background: "#0f172a", color: "#38bdf8", fontWeight: "bold" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Teks Isi Footer</label>
+                  <input
+                    type="text"
+                    value={footerText}
+                    onChange={(e) => setFooterText(e.target.value)}
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
+                  />
+                </div>
+                <div>
+                  <button
+                    type="submit"
+                    disabled={savingSettings}
+                    style={{ padding: "9px 20px", background: "#0284c7", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", height: "38px", whiteSpace: "nowrap" }}
+                  >
+                    {savingSettings ? "Menyimpan..." : "Simpan Pengaturan Tampilan"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -918,15 +928,15 @@ export default function AdminDashboardPage() {
                         <td style={{ padding: "12px 10px", color: "#cbd5e1", verticalAlign: "middle" }}>
                           {p.type === "GESTUN" ? "Gestun (Tanpa Lisensi)" : p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
                         </td>
-                        <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
-                          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                        <td style={{ padding: "12px 10px", verticalAlign: "middle", textAlign: "right" }}>
+                          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", alignItems: "center", flexWrap: "nowrap" }}>
                             <button
                               onClick={() => handleEditFullProduct(p)}
                               style={{
                                 background: "#0284c7",
                                 color: "#fff",
                                 border: "none",
-                                padding: "6px 12px",
+                                padding: "6px 10px",
                                 borderRadius: "6px",
                                 cursor: "pointer",
                                 fontSize: "0.75rem",
@@ -942,7 +952,7 @@ export default function AdminDashboardPage() {
                                 background: "#f59e0b",
                                 color: "#fff",
                                 border: "none",
-                                padding: "6px 12px",
+                                padding: "6px 10px",
                                 borderRadius: "6px",
                                 cursor: "pointer",
                                 fontSize: "0.75rem",
@@ -958,7 +968,7 @@ export default function AdminDashboardPage() {
                                 background: copiedId === p.id ? "#10b981" : "#2563eb",
                                 color: "#fff",
                                 border: "none",
-                                padding: "6px 12px",
+                                padding: "6px 10px",
                                 borderRadius: "6px",
                                 cursor: "pointer",
                                 fontSize: "0.75rem",
@@ -974,7 +984,7 @@ export default function AdminDashboardPage() {
                                 background: "#ef4444",
                                 color: "#fff",
                                 border: "none",
-                                padding: "6px 12px",
+                                padding: "6px 10px",
                                 borderRadius: "6px",
                                 cursor: "pointer",
                                 fontSize: "0.75rem",
