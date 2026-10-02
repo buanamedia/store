@@ -340,7 +340,7 @@ export default function GalleryDrivePage() {
                 />
               </label>
 
-              <Link href="/admin/page" style={{ background: "#475569", color: "#fff", padding: "10px 16px", borderRadius: "8px", textDecoration: "none", fontSize: "0.85rem", fontWeight: "bold" }}>
+              <Link href="/admin" style={{ background: "#475569", color: "#fff", padding: "10px 16px", borderRadius: "8px", textDecoration: "none", fontSize: "0.85rem", fontWeight: "bold" }}>
                 ← Dashboard Utama
               </Link>
 
