@@ -15,12 +15,14 @@ export default function HomePage() {
     gridColumns: number;
     widgetPosition: string;
     footerText: string;
+    adminWhatsapp: string;
   }>({
     headerTitle: "Buana Media Store",
     headerIcon: "🛒",
     gridColumns: 4,
     widgetPosition: "BELOW_CAROUSEL",
     footerText: "© Buana Media. All rights reserved.",
+    adminWhatsapp: "081414159500",
   });
 
   // Fetch Daftar Produk & Pengaturan Tampilan Toko
@@ -45,6 +47,7 @@ export default function HomePage() {
             gridColumns: Number(dataSet.settings.gridColumns) || 4,
             widgetPosition: dataSet.settings.widgetPosition || "BELOW_CAROUSEL",
             footerText: dataSet.settings.footerText || "© Buana Media. All rights reserved.",
+            adminWhatsapp: dataSet.settings.adminWhatsapp || "081414159500",
           });
         }
       } catch (err) {
@@ -56,6 +59,11 @@ export default function HomePage() {
 
     fetchData();
   }, []);
+
+  // Format link WhatsApp melayang
+  const cleanWaNumber = settings.adminWhatsapp.replace(/\D/g, "");
+  const formattedWaNumber = cleanWaNumber.startsWith("0") ? "62" + cleanWaNumber.slice(1) : cleanWaNumber;
+  const waFloatingUrl = `https://wa.me/${formattedWaNumber}?text=${encodeURIComponent("Halo Admin Buana Media Store, saya ingin bertanya...")}`;
 
   // Susun Slide Carousel: Gabungan Gestun + Produk Digital yang Dicentang "showInCarousel !== false"
   const carouselProducts = products.filter((p) => p.showInCarousel !== false);
@@ -361,6 +369,37 @@ export default function HomePage() {
         </section>
 
       </main>
+
+      {/* TOMBOL WHATSAPP MELAYANG (FLOATING WA) */}
+      <a
+        href={waFloatingUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Chat WhatsApp Admin"
+        style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          backgroundColor: "#25D366",
+          color: "#ffffff",
+          width: "56px",
+          height: "56px",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 6px 16px rgba(37, 211, 102, 0.4)",
+          zIndex: 9999,
+          textDecoration: "none",
+          transition: "transform 0.2s ease-in-out",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+      >
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+        </svg>
+      </a>
 
       {/* FOOTER DINAMIS */}
       <footer style={{ background: "#1e293b", borderTop: "1px solid #334155", padding: "24px 16px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>
