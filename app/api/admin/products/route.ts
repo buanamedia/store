@@ -47,6 +47,9 @@ export async function POST(request: Request) {
       manualKeys,
       generatorApiUrl,
       appUrl,
+      blogUrl,        // FIX: Ekstrak blogUrl
+      imageUrl,       // FIX: Ekstrak imageUrl
+      showInCarousel, // FIX: Ekstrak showInCarousel
       telegramFileId,
     } = body;
 
@@ -68,16 +71,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const formattedManualKeys = typeof manualKeys === "string"
+    const formattedManualKeys = Array.isArray(manualKeys)
+      ? manualKeys
+      : typeof manualKeys === "string"
       ? manualKeys.split(/[\n,]+/).map((k: string) => k.trim()).filter((k: string) => k.length > 0)
       : [];
 
+    // FIX: Masukkan imageUrl, blogUrl, dan showInCarousel ke payload Firestore
     const productPayload: Record<string, any> = {
-      name,
+      name: String(name).trim(),
       price: cleanPrice,
-      type,
+      type: type || "DOWNLOAD",
       hasLicense: Boolean(hasLicense),
       licenseMode: hasLicense ? licenseMode : "NONE",
+      imageUrl: imageUrl ? String(imageUrl).trim() : "",
+      blogUrl: blogUrl ? String(blogUrl).trim() : "",
+      showInCarousel: showInCarousel !== false,
       updatedAt: new Date().toISOString(),
     };
 
@@ -133,14 +142,12 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Ambil data produk untuk cek file/pesan Telegram jika ada
     const docRef = db.collection("products").doc(id);
     const docSnap = await docRef.get();
 
     if (docSnap.exists) {
       const pData = docSnap.data();
       
-      // Jika memiliki telegramMessageId / telegramFileId, hapus pesan via Bot Telegram API
       if (pData?.telegramMessageId && process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
         try {
           await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteMessage`, {
@@ -156,7 +163,6 @@ export async function DELETE(request: Request) {
         }
       }
 
-      // Hapus dokumen dari Firestore
       await docRef.delete();
     }
 
