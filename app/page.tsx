@@ -35,8 +35,8 @@ export default function HomePage() {
           setProducts(filtered);
         }
 
-        // 2. Fetch Pengaturan Tampilan Toko
-        const resSet = await fetch("/api/admin/settings");
+        // 2. Fetch Pengaturan Tampilan Toko dari Endpoint Public
+        const resSet = await fetch("/api/settings");
         const dataSet = await resSet.json();
         if (resSet.ok && dataSet.settings) {
           setSettings({
@@ -142,7 +142,14 @@ export default function HomePage() {
 
   return (
     <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", fontFamily: "sans-serif" }}>
-      
+      <style>{`
+        @media (max-width: 768px) {
+          .product-grid {
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+          }
+        }
+      `}</style>
+
       {/* HEADER / NAVBAR DINAMIS */}
       <header style={{ background: "#1e293b", borderBottom: "1px solid #334155", padding: "16px 24px", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -203,7 +210,6 @@ export default function HomePage() {
                   minHeight: "260px",
                 }}
               >
-                {/* JIKA TERSEDIA GAMBAR / FOTO PRODUK */}
                 {slide.imageUrl && (
                   <div style={{ flexShrink: 0, width: "180px", height: "180px", borderRadius: "16px", overflow: "hidden", border: "2px solid rgba(255,255,255,0.15)", boxShadow: "0 8px 20px rgba(0,0,0,0.3)" }}>
                     <img
@@ -214,7 +220,6 @@ export default function HomePage() {
                   </div>
                 )}
 
-                {/* TEKS & KONTEN */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                   <span style={{ background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", border: "1px solid #38bdf8", padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", marginBottom: "12px" }}>
                     {slide.badge}
@@ -245,7 +250,6 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* INDICATOR DOTS CAROUSEL */}
           {slides.length > 1 && (
             <div style={{ position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "8px" }}>
               {slides.map((_, idx) => (
@@ -286,11 +290,14 @@ export default function HomePage() {
               <p>Belum ada produk digital yang ditambahkan.</p>
             </div>
           ) : (
-            <div style={{ 
-              display: "grid", 
-              gridTemplateColumns: `repeat(auto-fill, minmax(${Math.floor(1000 / settings.gridColumns)}px, 1fr))`, 
-              gap: "20px" 
-            }}>
+            <div 
+              className="product-grid"
+              style={{ 
+                display: "grid", 
+                gridTemplateColumns: `repeat(${settings.gridColumns}, minmax(0, 1fr))`, 
+                gap: "20px" 
+              }}
+            >
               {products.map((product) => (
                 <div
                   key={product.id}
@@ -305,7 +312,6 @@ export default function HomePage() {
                   }}
                 >
                   <div>
-                    {/* FOTO PRODUK DALAM CARD JIKA TERSEDIA */}
                     {product.imageUrl && (
                       <div style={{ width: "100%", height: "140px", borderRadius: "8px", overflow: "hidden", marginBottom: "12px", border: "1px solid #334155" }}>
                         <img src={product.imageUrl} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
