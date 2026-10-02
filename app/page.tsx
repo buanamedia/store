@@ -8,7 +8,7 @@ export default function HomePage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch Daftar Produk dari API /api/products
+  // Fetch Daftar Produk dari API
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -29,7 +29,7 @@ export default function HomePage() {
     fetchProducts();
   }, []);
 
-  // Susun Slide Carousel: Combined antara Gestun Banner & Produk Digital Anda
+  // Susun Slide Carousel: Gabungan Gestun + Produk Digital
   const slides = [
     {
       id: "slide-gestun",
@@ -38,6 +38,7 @@ export default function HomePage() {
       badge: "LAYANAN UTAMA",
       ctaText: "Tarik Tunai Sekarang",
       ctaLink: "/gestun",
+      imageUrl: "", // Layanan utama tidak menggunakan gambar
       bgGradient: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
     },
     ...products.map((p, idx) => ({
@@ -47,6 +48,7 @@ export default function HomePage() {
       badge: `PRODUK DIGITAL ${idx + 1}`,
       ctaText: `Beli ${p.name} - Rp ${Number(p.price || 0).toLocaleString("id-ID")}`,
       ctaLink: `/checkout/${p.id}`,
+      imageUrl: p.imageUrl || p.image || p.bannerUrl || "", // Mendukung field foto dari Firestore
       bgGradient: idx % 2 === 0 
         ? "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" 
         : "linear-gradient(135deg, #111827 0%, #374151 100%)",
@@ -98,7 +100,7 @@ export default function HomePage() {
       {/* MAIN CONTAINER */}
       <main style={{ maxWidth: "1100px", margin: "0 auto", padding: "24px 16px 60px" }}>
         
-        {/* CAROUSEL BANNER HERO DINAMIS */}
+        {/* CAROUSEL BANNER HERO RESPONSIVE WITH IMAGE */}
         <section style={{ position: "relative", borderRadius: "20px", overflow: "hidden", marginBottom: "36px", boxShadow: "0 10px 25px rgba(0,0,0,0.4)", border: "1px solid #334155" }}>
           <div
             style={{
@@ -113,39 +115,53 @@ export default function HomePage() {
                 style={{
                   minWidth: "100%",
                   background: slide.bgGradient,
-                  padding: "48px 32px",
+                  padding: "40px 32px",
                   boxSizing: "border-box",
                   display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "flex-start",
-                  minHeight: "240px",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "28px",
+                  minHeight: "260px",
                 }}
               >
-                <span style={{ background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", border: "1px solid #38bdf8", padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", marginBottom: "12px" }}>
-                  {slide.badge}
-                </span>
-                <h2 style={{ fontSize: "1.8rem", color: "#ffffff", margin: "0 0 10px 0", fontWeight: "800" }}>
-                  {slide.title}
-                </h2>
-                <p style={{ fontSize: "0.95rem", color: "#cbd5e1", margin: "0 0 20px 0", maxWidth: "600px", lineHeight: "1.5" }}>
-                  {slide.subtitle}
-                </p>
-                <Link
-                  href={slide.ctaLink}
-                  style={{
-                    padding: "12px 24px",
-                    background: "#0284c7",
-                    color: "#ffffff",
-                    borderRadius: "10px",
-                    fontWeight: "bold",
-                    fontSize: "0.9rem",
-                    textDecoration: "none",
-                    boxShadow: "0 4px 14px rgba(2, 132, 199, 0.4)",
-                  }}
-                >
-                  {slide.ctaText} →
-                </Link>
+                {/* JIKA TERSEDIA GAMBAR / FOTO PRODUK */}
+                {slide.imageUrl && (
+                  <div style={{ flexShrink: 0, width: "180px", height: "180px", borderRadius: "16px", overflow: "hidden", border: "2px solid rgba(255,255,255,0.15)", boxShadow: "0 8px 20px rgba(0,0,0,0.3)" }}>
+                    <img
+                      src={slide.imageUrl}
+                      alt={slide.title}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                )}
+
+                {/* TEKS & KONTEN (OTOMATIS BERGESER KE KANAN JIKA GAMBAR ADA) */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                  <span style={{ background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", border: "1px solid #38bdf8", padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", marginBottom: "12px" }}>
+                    {slide.badge}
+                  </span>
+                  <h2 style={{ fontSize: "1.7rem", color: "#ffffff", margin: "0 0 10px 0", fontWeight: "800" }}>
+                    {slide.title}
+                  </h2>
+                  <p style={{ fontSize: "0.92rem", color: "#cbd5e1", margin: "0 0 20px 0", maxWidth: "650px", lineHeight: "1.5" }}>
+                    {slide.subtitle}
+                  </p>
+                  <Link
+                    href={slide.ctaLink}
+                    style={{
+                      padding: "12px 24px",
+                      background: "#0284c7",
+                      color: "#ffffff",
+                      borderRadius: "10px",
+                      fontWeight: "bold",
+                      fontSize: "0.9rem",
+                      textDecoration: "none",
+                      boxShadow: "0 4px 14px rgba(2, 132, 199, 0.4)",
+                    }}
+                  >
+                    {slide.ctaText} →
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
@@ -243,7 +259,6 @@ export default function HomePage() {
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between",
-                    transition: "transform 0.2s ease, border-color 0.2s ease",
                   }}
                 >
                   <div>
