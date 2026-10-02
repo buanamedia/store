@@ -35,7 +35,6 @@ export default function ProductsAndTransactionsPage() {
   const [editTelegramFileId, setEditTelegramFileId] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Auto Login via sessionStorage saat halaman dimuat
   useEffect(() => {
     const savedPwd = sessionStorage.getItem("admin_session_pwd");
     if (savedPwd) {
@@ -135,11 +134,28 @@ export default function ProductsAndTransactionsPage() {
     }
 
     try {
+      const payload = {
+        adminPassword,
+        id: String(product.id || "").trim(),
+        name: String(product.name || "").trim(),
+        price: newPrice,
+        type: product.type || "DOWNLOAD",
+        hasLicense: product.hasLicense !== false,
+        licenseMode: product.licenseMode || "AUTO",
+        manualKeys: product.manualKeys || "",
+        generatorApiUrl: product.generatorApiUrl || "",
+        appUrl: product.appUrl || "",
+        imageUrl: product.imageUrl || "",
+        showInCarousel: product.showInCarousel !== false,
+        telegramFileId: product.telegramFileId || "",
+      };
+
       const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminPassword, ...product, price: newPrice }),
+        body: JSON.stringify(payload),
       });
+
       const data = await res.json();
       if (res.ok && data.success) {
         alert(`Harga produk '${product.name}' berhasil diubah!`);
@@ -159,6 +175,7 @@ export default function ProductsAndTransactionsPage() {
       const res = await fetch(`/api/admin/products?id=${encodeURIComponent(productId)}&password=${encodeURIComponent(adminPassword)}`, {
         method: "DELETE",
       });
+
       const data = await res.json();
       if (res.ok && data.success) {
         alert(`Produk '${productId}' berhasil dihapus!`);
@@ -178,6 +195,7 @@ export default function ProductsAndTransactionsPage() {
       const res = await fetch(`/api/admin/transactions?id=${encodeURIComponent(transactionId)}&password=${encodeURIComponent(adminPassword)}`, {
         method: "DELETE",
       });
+
       const data = await res.json();
       if (res.ok && data.success) {
         alert(`Transaksi '${refOrId}' berhasil dihapus!`);
@@ -218,18 +236,18 @@ export default function ProductsAndTransactionsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           adminPassword,
-          id: editingProduct.id,
-          name: editName,
+          id: String(editingProduct.id).trim(),
+          name: editName.trim(),
           price: cleanPrice,
           type: editType,
-          hasLicense: editHasLicense,
+          hasLicense: Boolean(editHasLicense),
           licenseMode: editLicenseMode,
           manualKeys: editManualKeys,
           generatorApiUrl: editGeneratorApiUrl,
-          appUrl: editAppUrl,
-          imageUrl: editImageUrl,
-          showInCarousel: editShowInCarousel,
-          telegramFileId: editTelegramFileId,
+          appUrl: editAppUrl.trim(),
+          imageUrl: editImageUrl.trim(),
+          showInCarousel: Boolean(editShowInCarousel),
+          telegramFileId: editTelegramFileId.trim(),
         }),
       });
 
@@ -447,9 +465,8 @@ export default function ProductsAndTransactionsPage() {
                     <input type="number" required value={editPrice} onChange={(e) => setEditPrice(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }} />
                   </div>
 
-                  {/* Field URL Gambar & Carousel Toggle */}
                   <div style={{ background: "#0f172a", padding: "12px", borderRadius: "8px", border: "1px solid #334155", marginBottom: "12px" }}>
-                    <label style={{ display: "block", fontSize: "0.8rem", color: "#38bdf8", marginBottom: "4px" }}>URL Gambar Produk</label>
+                    <label style={{ display: "block", fontSize: "0.8rem", color: "#38bdf8", marginBottom: "4px" }}>URL Gambar Produk / Banner Carousel</label>
                     <input type="url" placeholder="https://domain.com/gambar.png" value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", marginBottom: "8px" }} />
                     <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.8rem", color: "#cbd5e1" }}>
                       <input type="checkbox" checked={editShowInCarousel} onChange={(e) => setEditShowInCarousel(e.target.checked)} /> Tampilkan di Banner Carousel Halaman Utama?
@@ -461,6 +478,7 @@ export default function ProductsAndTransactionsPage() {
                     <select value={editType} onChange={(e) => setEditType(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}>
                       <option value="DOWNLOAD">File Download / Software Installer</option>
                       <option value="ACCESS">Akses Portal Web / Aplikasi / SaaS</option>
+                      <option value="GESTUN">GESTUN / Tarik Tunai</option>
                     </select>
                   </div>
                   <div style={{ marginBottom: "12px" }}>
