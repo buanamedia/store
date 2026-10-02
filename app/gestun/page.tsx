@@ -26,9 +26,6 @@ const BANK_OPTIONS = [
   "LinkAja",
 ];
 
-const RANDOM_NAMES = ["Budi Santoso", "Eko Prasetyo", "Dewi Lestari", "Rian Hidayat", "Siti Rahma", "Agus Wijaya", "Andi Pratama"];
-const RANDOM_PHONES = ["081234567890", "085712345678", "081398765432", "082111223344", "087855667788"];
-
 const SERVICE_FEE_PERCENT = 0.07;
 const TRANSFER_FEE = 2500;
 
@@ -43,7 +40,8 @@ export default function GestunPage() {
   const [accountNumber, setAccountNumber] = useState("");
   const [accountHolder, setAccountHolder] = useState("");
 
-  const [agreedTerms, setAgreedTerms] = useState(true);
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -55,27 +53,12 @@ export default function GestunPage() {
   const totalDeduction = adminFee + serviceFee + TRANSFER_FEE;
   const netPayout = Math.max(0, rawAmount - totalDeduction);
 
-  // Fungsi untuk mengisi data contoh secara acak (Random Data)
-  const handleFillRandomData = () => {
-    const randomName = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
-    const randomPhone = RANDOM_PHONES[Math.floor(Math.random() * RANDOM_PHONES.length)];
-    const randomBank = BANK_OPTIONS[Math.floor(Math.random() * BANK_OPTIONS.length)];
-    const randomAccountNum = Math.floor(1000000000 + Math.random() * 9000000000).toString();
-
-    setCustomerName(randomName);
-    setCustomerPhone(randomPhone);
-    setCustomerEmail(`${randomName.toLowerCase().replace(/\s+/g, ".")}@gmail.com`);
-    setBankName(randomBank);
-    setAccountNumber(randomAccountNum);
-    setAccountHolder(randomName);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
     if (!agreedTerms) {
-      setErrorMessage("Anda harus menyetujui Syarat & Ketentuan layanan.");
+      setErrorMessage("Anda wajib menyetujui Syarat & Ketentuan sebelum melanjutkan transaksi.");
       return;
     }
 
@@ -127,27 +110,11 @@ export default function GestunPage() {
     <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", padding: "40px 16px", fontFamily: "sans-serif" }}>
       <div style={{ maxWidth: "520px", margin: "0 auto", background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid #334155", boxShadow: "0 10px 25px rgba(0,0,0,0.3)" }}>
         
-        {/* Header Navigation */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+        {/* Navigasi Kembali */}
+        <div style={{ marginBottom: "16px" }}>
           <Link href="/" style={{ color: "#38bdf8", textDecoration: "none", fontSize: "0.85rem", fontWeight: "bold" }}>
             ← Kembali ke Beranda
           </Link>
-          <button
-            type="button"
-            onClick={handleFillRandomData}
-            style={{
-              background: "#334155",
-              color: "#38bdf8",
-              border: "1px solid #0284c7",
-              padding: "4px 10px",
-              borderRadius: "6px",
-              fontSize: "0.75rem",
-              fontWeight: "bold",
-              cursor: "pointer"
-            }}
-          >
-            🎲 Isi Contoh Random
-          </button>
         </div>
 
         <h1 style={{ fontSize: "1.4rem", color: "#38bdf8", textAlign: "center", marginTop: 0, marginBottom: "20px" }}>⚡ Form Tarik Tunai / Gestun</h1>
@@ -161,23 +128,48 @@ export default function GestunPage() {
         <form onSubmit={handleSubmit}>
           {/* Data Pemohon */}
           <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Nama Lengkap Pemohon</label>
-            <input type="text" required placeholder="Sesuai KTP / Rekening" value={customerName} onChange={(e) => setCustomerName(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }} />
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Nama Lengkap</label>
+            <input
+              type="text"
+              required
+              placeholder="Contoh: Agus Siahaan"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
+            />
           </div>
 
           <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>No. WhatsApp Active</label>
-            <input type="tel" required placeholder="081234567890" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }} />
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>No. WhatsApp</label>
+            <input
+              type="tel"
+              required
+              placeholder="Contoh: 081234567890"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
+            />
           </div>
 
           <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Email Penerima Bukti</label>
-            <input type="email" required placeholder="email@domain.com" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }} />
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Email</label>
+            <input
+              type="email"
+              required
+              placeholder="Contoh: agus@buanamedia.my.id"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
+            />
           </div>
 
           <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Metode Bayar / Pencairan via</label>
-            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Metode Bayar</label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
+            >
               <option value="QRIS">{ADMIN_FEE_RATES.QRIS.name}</option>
               <option value="CREDIT_CARD">{ADMIN_FEE_RATES.CREDIT_CARD.name}</option>
               <option value="VA_BCA">{ADMIN_FEE_RATES.VA_BCA.name}</option>
@@ -186,16 +178,29 @@ export default function GestunPage() {
 
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", fontSize: "0.8rem", color: "#38bdf8", fontWeight: "bold", marginBottom: "4px" }}>Nominal Tarik Tunai (Rp)</label>
-            <input type="number" required min="20000" step="1000" placeholder="100000" value={amountInput} onChange={(e) => setAmountInput(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #0284c7", background: "#0f172a", color: "#38bdf8", fontSize: "1.1rem", fontWeight: "bold", boxSizing: "border-box" }} />
+            <input
+              type="number"
+              required
+              min="20000"
+              step="1000"
+              placeholder="Contoh: 100000"
+              value={amountInput}
+              onChange={(e) => setAmountInput(e.target.value)}
+              style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #0284c7", background: "#0f172a", color: "#38bdf8", fontSize: "1.1rem", fontWeight: "bold", boxSizing: "border-box" }}
+            />
           </div>
 
-          {/* Target Rekening / E-Wallet dengan Dropdown */}
+          {/* Tujuan Rekening / E-Wallet */}
           <div style={{ background: "#0f172a", padding: "14px", borderRadius: "10px", border: "1px solid #334155", marginBottom: "16px" }}>
             <span style={{ fontSize: "0.8rem", color: "#38bdf8", display: "block", fontWeight: "bold", marginBottom: "8px" }}>Tujuan Rekening / E-Wallet Pencairan</span>
             
             <div style={{ marginBottom: "8px" }}>
-              <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>Pilih Bank / E-Wallet:</label>
-              <select value={bankName} onChange={(e) => setBankName(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}>
+              <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>Nama Bank / E-Wallet</label>
+              <select
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
+              >
                 {BANK_OPTIONS.map((bank) => (
                   <option key={bank} value={bank}>{bank}</option>
                 ))}
@@ -203,13 +208,27 @@ export default function GestunPage() {
             </div>
 
             <div style={{ marginBottom: "8px" }}>
-              <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>Nomor Rekening / HP E-Wallet:</label>
-              <input type="text" required placeholder="Contoh: 1234567890" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>No. Rekening / No. E-Wallet</label>
+              <input
+                type="text"
+                required
+                placeholder="Contoh: 1234567890"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
+              />
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>Nama Pemilik Rekening (Sesuai Bank):</label>
-              <input type="text" required placeholder="Atas Nama Penerima" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }} />
+              <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>Atas Nama Penerima</label>
+              <input
+                type="text"
+                required
+                placeholder="Contoh: Agus Siahaan"
+                value={accountHolder}
+                onChange={(e) => setAccountHolder(e.target.value)}
+                style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
+              />
             </div>
           </div>
 
@@ -237,40 +256,107 @@ export default function GestunPage() {
             </div>
           </div>
 
-          {/* Syarat & Ketentuan Layanan Gestun */}
-          <div style={{ background: "#0f172a", padding: "12px", borderRadius: "8px", border: "1px solid #334155", marginBottom: "20px" }}>
-            <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer", fontSize: "0.78rem", color: "#cbd5e1", lineHeight: "1.4" }}>
+          {/* Checkbox Syarat & Ketentuan */}
+          <div style={{ background: "#0f172a", padding: "12px 14px", borderRadius: "8px", border: "1px solid #334155", marginBottom: "20px" }}>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer", fontSize: "0.8rem", color: "#cbd5e1", lineHeight: "1.4" }}>
               <input
                 type="checkbox"
                 checked={agreedTerms}
                 onChange={(e) => setAgreedTerms(e.target.checked)}
-                style={{ marginTop: "2px", cursor: "pointer" }}
+                style={{ marginTop: "2px", cursor: "pointer", width: "16px", height: "16px" }}
               />
               <span>
-                Saya menyetujui <strong>Syarat & Ketentuan Layanan</strong>: Dana bersih akan ditransfer otomatis ke rekening penerima setelah pembayaran diverifikasi oleh Payment Gateway (1-5 menit). Pastikan nomor rekening dan nama pemilik sudah benar.
+                Saya menyetujui{" "}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowTermsModal(true);
+                  }}
+                  style={{ background: "none", border: "none", color: "#38bdf8", textDecoration: "underline", cursor: "pointer", padding: 0, font: "inherit", fontWeight: "bold" }}
+                >
+                  Syarat & Ketentuan Layanan
+                </button>{" "}
+                pencairan dana ini.
               </span>
             </label>
           </div>
 
+          {/* Tombol Submit (Disabled jika belum dicentang) */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !agreedTerms}
             style={{
               width: "100%",
               padding: "14px",
-              background: "#2563eb",
-              color: "#fff",
+              background: agreedTerms ? "#2563eb" : "#334155",
+              color: agreedTerms ? "#fff" : "#94a3b8",
               border: "none",
               borderRadius: "8px",
               fontWeight: "bold",
               fontSize: "1rem",
-              cursor: loading ? "not-allowed" : "pointer"
+              cursor: agreedTerms && !loading ? "pointer" : "not-allowed",
+              transition: "background 0.2s"
             }}
           >
             {loading ? "Menghubungkan Gateway..." : `Beli / Bayar Rp ${rawAmount.toLocaleString("id-ID")}`}
           </button>
         </form>
       </div>
+
+      {/* POPUP MODAL SYARAT & KETENTUAN */}
+      {showTermsModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(15, 23, 42, 0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "16px" }}>
+          <div style={{ background: "#1e293b", color: "#f8fafc", border: "1px solid #334155", padding: "24px", borderRadius: "16px", width: "100%", maxWidth: "500px", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 20px 40px rgba(0,0,0,0.5)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid #334155", paddingBottom: "12px" }}>
+              <h3 style={{ margin: 0, color: "#38bdf8", fontSize: "1.1rem" }}>📜 Syarat & Ketentuan Layanan Gestun</h3>
+              <button onClick={() => setShowTermsModal(false)} style={{ background: "transparent", border: "none", color: "#94a3b8", fontSize: "1.3rem", cursor: "pointer", padding: "0 8px" }}>&times;</button>
+            </div>
+
+            <div style={{ fontSize: "0.85rem", color: "#cbd5e1", lineHeight: "1.6" }}>
+              <p style={{ marginTop: 0 }}>Dengan melanjutkan transaksi Gestun / Tarik Tunai di STORE Engine, Anda menyatakan dan menyetujui ketentuan berikut:</p>
+              
+              <ol style={{ paddingLeft: "20px", margin: "12px 0" }}>
+                <li style={{ marginBottom: "8px" }}>
+                  <strong>Kepemilikan Sah:</strong> Sumber dana yang digunakan (Kartu Kredit / QRIS / Paylater) adalah milik Anda pribadi yang sah secara hukum.
+                </li>
+                <li style={{ marginBottom: "8px" }}>
+                  <strong>Validitas Rekening Penerima:</strong> Pastikan Nama Bank, Nomor Rekening/E-Wallet, dan Nama Pemilik Rekening sesuai dan aktif. Kesalahan penginputan nomor rekening sepenuhnya menjadi tanggung jawab pemohon.
+                </li>
+                <li style={{ marginBottom: "8px" }}>
+                  <strong>Proses Pencairan Otomatis:</strong> Dana bersih (*Net Payout*) akan ditransfer otomatis ke rekening penerima dalam waktu <strong>1 - 5 menit</strong> setelah status pembayaran terkonfirmasi LUNAS oleh Payment Gateway.
+                </li>
+                <li style={{ marginBottom: "8px" }}>
+                  <strong>Skema Biaya Potongan:</strong> Transaksi dikenakan biaya Gateway sesuai kanal bayar, Biaya Layanan Gestun sebesar 7%, dan Biaya Transfer Bank sebesar Rp 2.500.
+                </li>
+                <li style={{ marginBottom: "8px" }}>
+                  <strong>Finalitas Transaksi:</strong> Pembayaran yang sudah dikonfirmasi tidak dapat dibatalkan atau ditarik kembali (*non-refundable*).
+                </li>
+              </ol>
+            </div>
+
+            <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setAgreedTerms(true);
+                  setShowTermsModal(false);
+                }}
+                style={{ flex: 1, padding: "10px", background: "#0284c7", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", fontSize: "0.85rem" }}
+              >
+                Saya Setuju & Paham
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                style={{ padding: "10px 16px", background: "#475569", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "0.85rem" }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
