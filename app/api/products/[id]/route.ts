@@ -23,7 +23,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     const data = doc.data();
-    
+
     // Hitung sisa stok jika mode MANUAL
     let isOutOfStock = false;
     if (data?.hasLicense !== false && data?.licenseMode === "MANUAL") {
@@ -42,8 +42,13 @@ export async function GET(request: Request, { params }: { params: { id: string }
       success: true,
       product: {
         id: doc.id,
-        name: data?.name,
-        price: data?.price,
+        name: data?.name || "",
+        price: data?.price || 0,
+        type: data?.type || "DOWNLOAD",
+        imageUrl: data?.imageUrl || "",         // FIXED: Mengirim URL Gambar
+        blogUrl: data?.blogUrl || "",           // FIXED: Mengirim URL Blogspot
+        showInCarousel: data?.showInCarousel !== false, // FIXED: Mengirim Status Carousel
+        appUrl: data?.appUrl || "",
         isOutOfStock,
       }
     }, { headers: corsHeaders });
