@@ -16,11 +16,17 @@ export async function OPTIONS() {
 export async function GET() {
   try {
     const snapshot = await db.collection("products").get();
-    
-    const products = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+
+    const products = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        imageUrl: data.imageUrl || "",
+        blogUrl: data.blogUrl || "",
+        showInCarousel: data.showInCarousel !== false,
+      };
+    });
 
     return NextResponse.json(
       { success: true, products },
