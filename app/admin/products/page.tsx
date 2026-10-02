@@ -30,6 +30,8 @@ export default function ProductsAndTransactionsPage() {
   const [editManualKeys, setEditManualKeys] = useState("");
   const [editGeneratorApiUrl, setEditGeneratorApiUrl] = useState("");
   const [editAppUrl, setEditAppUrl] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [editShowInCarousel, setEditShowInCarousel] = useState(true);
   const [editTelegramFileId, setEditTelegramFileId] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -198,6 +200,8 @@ export default function ProductsAndTransactionsPage() {
     setEditManualKeys(product.manualKeys || "");
     setEditGeneratorApiUrl(product.generatorApiUrl || "");
     setEditAppUrl(product.appUrl || "");
+    setEditImageUrl(product.imageUrl || "");
+    setEditShowInCarousel(product.showInCarousel !== false);
     setEditTelegramFileId(product.telegramFileId || "");
   };
 
@@ -223,6 +227,8 @@ export default function ProductsAndTransactionsPage() {
           manualKeys: editManualKeys,
           generatorApiUrl: editGeneratorApiUrl,
           appUrl: editAppUrl,
+          imageUrl: editImageUrl,
+          showInCarousel: editShowInCarousel,
           telegramFileId: editTelegramFileId,
         }),
       });
@@ -317,7 +323,7 @@ export default function ProductsAndTransactionsPage() {
                         <th style={{ padding: "12px 10px" }}>Nama Produk</th>
                         <th style={{ padding: "12px 10px" }}>Harga</th>
                         <th style={{ padding: "12px 10px" }}>Tipe</th>
-                        <th style={{ padding: "12px 10px" }}>Lisensi Mode</th>
+                        <th style={{ padding: "12px 10px" }}>Carousel</th>
                         <th style={{ padding: "12px 10px", textAlign: "right" }}>Aksi</th>
                       </tr>
                     </thead>
@@ -333,8 +339,8 @@ export default function ProductsAndTransactionsPage() {
                               {p.type || "DOWNLOAD"}
                             </span>
                           </td>
-                          <td style={{ padding: "12px 10px", color: "#cbd5e1" }}>
-                            {p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
+                          <td style={{ padding: "12px 10px" }}>
+                            {p.showInCarousel !== false ? "✅ Tampil" : "❌ Sembunyi"}
                           </td>
                           <td style={{ padding: "12px 10px", textAlign: "right" }}>
                             <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -440,6 +446,16 @@ export default function ProductsAndTransactionsPage() {
                     <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Harga (Rp)</label>
                     <input type="number" required value={editPrice} onChange={(e) => setEditPrice(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }} />
                   </div>
+
+                  {/* Field URL Gambar & Carousel Toggle */}
+                  <div style={{ background: "#0f172a", padding: "12px", borderRadius: "8px", border: "1px solid #334155", marginBottom: "12px" }}>
+                    <label style={{ display: "block", fontSize: "0.8rem", color: "#38bdf8", marginBottom: "4px" }}>URL Gambar Produk</label>
+                    <input type="url" placeholder="https://domain.com/gambar.png" value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", marginBottom: "8px" }} />
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.8rem", color: "#cbd5e1" }}>
+                      <input type="checkbox" checked={editShowInCarousel} onChange={(e) => setEditShowInCarousel(e.target.checked)} /> Tampilkan di Banner Carousel Halaman Utama?
+                    </label>
+                  </div>
+
                   <div style={{ marginBottom: "12px" }}>
                     <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Tipe Penjualan</label>
                     <select value={editType} onChange={(e) => setEditType(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}>
@@ -497,6 +513,7 @@ export default function ProductsAndTransactionsPage() {
               </div>
             </div>
           )}
+
         </div>
       )}
     </div>
