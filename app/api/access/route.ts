@@ -13,24 +13,120 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
+// Helper untuk merender halaman HTML error / tidak ditemukan
+function renderErrorPage(title: string, message: string, invoice: string = "") {
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${title} - STORE Engine</title>
+      <style>
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+          background: #0f172a; 
+          color: #f8fafc; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          min-height: 100vh; 
+          margin: 0; 
+          padding: 20px; 
+          box-sizing: border-box; 
+        }
+        .card { 
+          background: #1e293b; 
+          border: 1px solid #334155; 
+          border-radius: 16px; 
+          padding: 32px 24px; 
+          max-width: 440px; 
+          width: 100%; 
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); 
+          text-align: center; 
+          box-sizing: border-box;
+        }
+        .badge-container {
+          margin-bottom: 16px;
+        }
+        .badge-error { 
+          background: #ef4444; 
+          color: #fff; 
+          padding: 6px 16px; 
+          border-radius: 99px; 
+          font-weight: bold; 
+          font-size: 0.85rem; 
+          display: inline-block; 
+          letter-spacing: 0.5px;
+        }
+        h1 { font-size: 1.35rem; margin: 0 0 10px 0; color: #fff; }
+        p.desc { color: #94a3b8; font-size: 0.9rem; margin: 0 0 24px 0; line-height: 1.5; }
+        .invoice-box {
+          background: #0f172a;
+          border: 1px dashed #475569;
+          border-radius: 8px;
+          padding: 10px 14px;
+          font-family: monospace;
+          color: #f8fafc;
+          font-size: 0.95rem;
+          margin-bottom: 24px;
+          word-break: break-all;
+        }
+        .btn-home { 
+          display: inline-block;
+          width: 100%; 
+          padding: 12px 20px; 
+          background: #2563eb; 
+          color: #fff; 
+          text-decoration: none; 
+          border-radius: 8px; 
+          font-weight: bold; 
+          font-size: 0.9rem; 
+          box-sizing: border-box; 
+          transition: background 0.2s; 
+        }
+        .btn-home:hover { background: #1d4ed8; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="badge-container">
+          <span class="badge-error">TIDAK DITEMUKAN</span>
+        </div>
+        <h1>${title}</h1>
+        <p class="desc">${message}</p>
+        ${invoice ? `<div class="invoice-box">Nomor Invoice: ${invoice}</div>` : ""}
+        <a href="/" class="btn-home">← Kembali ke Halaman Utama</a>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return new NextResponse(htmlContent, {
+    status: 404,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const invoiceNumber = searchParams.get("invoice");
 
     if (!invoiceNumber) {
-      return NextResponse.json(
-        { success: false, message: "Parameter invoice tidak ditemukan" },
-        { status: 400, headers: corsHeaders }
+      return renderErrorPage(
+        "Invoice Tidak Ditemukan",
+        "Silakan masukkan nomor invoice transaksi yang valid untuk melakukan pencarian."
       );
     }
 
-    // 1. Cek Data Pesanan
+    // 1. Cek Data Pesanan di Firestore
     const orderDoc = await db.collection("orders").doc(invoiceNumber).get();
     if (!orderDoc.exists) {
-      return NextResponse.json(
-        { success: false, message: "Akses tidak ditemukan atau invoice salah" },
-        { status: 404, headers: corsHeaders }
+      return renderErrorPage(
+        "Data Invoice Tidak Ditemukan",
+        "Nomor invoice yang Anda cari tidak terdaftar di sistem kami. Mohon periksa kembali nomor invoice Anda.",
+        invoiceNumber
       );
     }
 
@@ -38,9 +134,10 @@ export async function GET(request: Request) {
 
     // Pastikan pesanan sudah PAID
     if (orderData?.status !== "PAID") {
-      return NextResponse.json(
-        { success: false, message: "Akses tidak ditemukan atau pembayaran belum lunas" },
-        { status: 403, headers: corsHeaders }
+      return renderErrorPage(
+        "Pembayaran Belum Dikonfirmasi",
+        "Status transaksi ini belum lunas atau masih dalam proses verifikasi pembayaran.",
+        invoiceNumber
       );
     }
 
@@ -74,7 +171,6 @@ export async function GET(request: Request) {
     const amountVal = orderData.amount || orderData.price || 0;
     const formattedAmount = Number(amountVal).toLocaleString("id-ID");
 
-    // Jika productName sudah mengandung "- Rp", gunakan productName langsung.
     const displayTitle = rawProductName.includes("- Rp")
       ? rawProductName
       : `${rawProductName} - Rp ${formattedAmount}`;
@@ -210,6 +306,7 @@ export async function GET(request: Request) {
             width: 100%; 
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); 
             text-align: center; 
+            box-sizing: border-box;
           }
           .badge-container {
             margin-bottom: 20px;
@@ -287,9 +384,9 @@ export async function GET(request: Request) {
     });
   } catch (error: any) {
     console.error("Access API Error:", error);
-    return NextResponse.json(
-      { success: false, message: "Server Error: " + error.message },
-      { status: 500, headers: corsHeaders }
+    return renderErrorPage(
+      "Server Error",
+      "Terjadi kesalahan pada server. Silakan coba lagi nanti."
     );
   }
 }
