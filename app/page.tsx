@@ -3,40 +3,10 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
-// Banner Promo untuk Carousel
-const BANNER_SLIDES = [
-  {
-    id: 1,
-    title: "⚡ Layanan Gestun & Tarik Tunai Instant",
-    subtitle: "Pencairan dana cepat, biaya transparan 7%, dan diproses otomatis 24/7.",
-    badge: "LAYANAN BARU",
-    ctaText: "Tarik Tunai Sekarang",
-    ctaLink: "/gestun",
-    bgGradient: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
-  },
-  {
-    id: 2,
-    title: "🚀 Supercharge Workflow Anda dengan Tool Digital",
-    subtitle: "Dapatkan akses lisensi resmi instant untuk berbagai aplikasi dan extension unggulan.",
-    badge: "PROMO LISENSI",
-    ctaText: "Lihat Produk",
-    ctaLink: "#products-section",
-    bgGradient: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-  },
-];
-
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Auto Play Banner Carousel
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % BANNER_SLIDES.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Fetch Daftar Produk dari API /api/products
   useEffect(() => {
@@ -45,7 +15,7 @@ export default function HomePage() {
         const res = await fetch("/api/products");
         const data = await res.json();
         if (res.ok && data.products) {
-          // Filter agar produk GESTUN tidak tampil sebagai produk biasa di grid jika tidak diinginkan
+          // Filter agar produk GESTUN disembunyikan dari grid produk biasa
           const filtered = data.products.filter((p: any) => p.id !== "GESTUN");
           setProducts(filtered);
         }
@@ -59,11 +29,44 @@ export default function HomePage() {
     fetchProducts();
   }, []);
 
+  // Susun Slide Carousel: Combined antara Gestun Banner & Produk Digital Anda
+  const slides = [
+    {
+      id: "slide-gestun",
+      title: "⚡ Layanan Gestun & Tarik Tunai Instant",
+      subtitle: "Pencairan dana cepat, biaya transparan 7%, dan diproses otomatis 24/7.",
+      badge: "LAYANAN UTAMA",
+      ctaText: "Tarik Tunai Sekarang",
+      ctaLink: "/gestun",
+      bgGradient: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
+    },
+    ...products.map((p, idx) => ({
+      id: p.id,
+      title: `🚀 ${p.name}`,
+      subtitle: p.description || "Dapatkan akses lisensi resmi instant untuk otomatisasi workflow Anda.",
+      badge: `PRODUK DIGITAL ${idx + 1}`,
+      ctaText: `Beli ${p.name} - Rp ${Number(p.price || 0).toLocaleString("id-ID")}`,
+      ctaLink: `/checkout/${p.id}`,
+      bgGradient: idx % 2 === 0 
+        ? "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" 
+        : "linear-gradient(135deg, #111827 0%, #374151 100%)",
+    })),
+  ];
+
+  // Auto Play Banner Carousel
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
   return (
     <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", fontFamily: "sans-serif" }}>
       
       {/* HEADER / NAVBAR */}
-      <header style={{ background: "#1e293b", borderBottom: "1px solid #334155", padding: "16px 24px", sticky: "top", position: "sticky", top: 0, zIndex: 100 }}>
+      <header style={{ background: "#1e293b", borderBottom: "1px solid #334155", padding: "16px 24px", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Link href="/" style={{ fontSize: "1.3rem", fontWeight: "bold", color: "#38bdf8", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px" }}>
             🛒 <span>STORE Engine</span>
@@ -95,7 +98,7 @@ export default function HomePage() {
       {/* MAIN CONTAINER */}
       <main style={{ maxWidth: "1100px", margin: "0 auto", padding: "24px 16px 60px" }}>
         
-        {/* CAROUSEL BANNER HERO */}
+        {/* CAROUSEL BANNER HERO DINAMIS */}
         <section style={{ position: "relative", borderRadius: "20px", overflow: "hidden", marginBottom: "36px", boxShadow: "0 10px 25px rgba(0,0,0,0.4)", border: "1px solid #334155" }}>
           <div
             style={{
@@ -104,7 +107,7 @@ export default function HomePage() {
               transform: `translateX(-${currentSlide * 100}%)`,
             }}
           >
-            {BANNER_SLIDES.map((slide) => (
+            {slides.map((slide) => (
               <div
                 key={slide.id}
                 style={{
@@ -148,26 +151,28 @@ export default function HomePage() {
           </div>
 
           {/* INDICATOR DOTS CAROUSEL */}
-          <div style={{ position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "8px" }}>
-            {BANNER_SLIDES.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSlide(idx)}
-                style={{
-                  width: currentSlide === idx ? "24px" : "8px",
-                  height: "8px",
-                  borderRadius: "4px",
-                  background: currentSlide === idx ? "#38bdf8" : "#64748b",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                }}
-              />
-            ))}
-          </div>
+          {slides.length > 1 && (
+            <div style={{ position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "8px" }}>
+              {slides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  style={{
+                    width: currentSlide === idx ? "24px" : "8px",
+                    height: "8px",
+                    borderRadius: "4px",
+                    background: currentSlide === idx ? "#38bdf8" : "#64748b",
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* KARTU PROMO KHUSUS GESTUN / TARIK TUNAI */}
+        {/* KARTU PROMO KHUSUS GESTUN */}
         <section style={{ marginBottom: "40px" }}>
           <div
             style={{
