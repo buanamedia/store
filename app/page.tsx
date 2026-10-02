@@ -7,6 +7,9 @@ export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // State untuk kontrol pop-up WA Chat
+  const [showWaPopup, setShowWaPopup] = useState(false);
 
   // Settings Tampilan Store dari Database
   const [settings, setSettings] = useState<{
@@ -63,7 +66,7 @@ export default function HomePage() {
   // Format link WhatsApp melayang
   const cleanWaNumber = settings.adminWhatsapp.replace(/\D/g, "");
   const formattedWaNumber = cleanWaNumber.startsWith("0") ? "62" + cleanWaNumber.slice(1) : cleanWaNumber;
-  const waFloatingUrl = `https://wa.me/${formattedWaNumber}?text=${encodeURIComponent("Halo Admin Buana Media Store, saya ingin bertanya...")}`;
+  const waFloatingUrl = `https://wa.me/${formattedWaNumber}?text=${encodeURIComponent(`Halo Admin ${settings.headerTitle}, saya ingin bertanya...`)}`;
 
   // Susun Slide Carousel: Gabungan Gestun + Produk Digital yang Dicentang "showInCarousel !== false"
   const carouselProducts = products.filter((p) => p.showInCarousel !== false);
@@ -370,42 +373,141 @@ export default function HomePage() {
 
       </main>
 
+      {/* POP-UP CHAT BOX WHATSAPP */}
+      {showWaPopup && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "95px",
+            right: "24px",
+            width: "320px",
+            maxWidth: "calc(100vw - 48px)",
+            backgroundColor: "#ffffff",
+            borderRadius: "16px",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+            overflow: "hidden",
+            zIndex: 9999,
+            animation: "fadeIn 0.2s ease-in-out",
+          }}
+        >
+          {/* Header Popup Hijau */}
+          <div
+            style={{
+              backgroundColor: "#00a884",
+              color: "#ffffff",
+              padding: "16px",
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={() => setShowWaPopup(false)}
+              style={{
+                position: "absolute",
+                top: "12px",
+                right: "12px",
+                background: "none",
+                border: "none",
+                color: "#ffffff",
+                fontSize: "18px",
+                fontWeight: "bold",
+                cursor: "pointer",
+                lineHeight: "1",
+              }}
+            >
+              ✕
+            </button>
+            <h3 style={{ margin: "0 0 6px 0", fontSize: "1.15rem", fontWeight: "bold" }}>
+              Halo yang disana!
+            </h3>
+            <p style={{ margin: 0, fontSize: "0.8rem", lineHeight: "1.4", opacity: 0.95 }}>
+              Silahkan klik dibawah ini untuk bertanya tentang {settings.headerTitle} dan tersambung ke WhatsApp :)
+            </p>
+          </div>
+
+          {/* Body Popup / Tombol Kontak CS */}
+          <div style={{ padding: "16px", backgroundColor: "#f8fafc" }}>
+            <a
+              href={waFloatingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "12px",
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                border: "1px solid #10b981",
+                textDecoration: "none",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+              }}
+            >
+              <div
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "50%",
+                  backgroundColor: "#d1fae5",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                  <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"></path>
+                  <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+                </svg>
+              </div>
+              <div>
+                <span style={{ display: "block", fontSize: "0.7rem", color: "#64748b", fontWeight: "bold", letterSpacing: "0.5px" }}>
+                  CS ADMIN
+                </span>
+                <strong style={{ fontSize: "0.95rem", color: "#0f172a" }}>
+                  {settings.headerTitle}
+                </strong>
+              </div>
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* TOMBOL WHATSAPP MELAYANG (FLOATING WA) */}
-      <a
-  href={waFloatingUrl}
-  target="_blank"
-  rel="noopener noreferrer"
-  title="Chat WhatsApp Admin"
-  style={{
-    position: "fixed",
-    bottom: "24px",
-    right: "24px",
-    backgroundColor: "#25D366",
-    color: "#ffffff",
-    width: "56px",
-    height: "56px",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 6px 16px rgba(37, 211, 102, 0.4)",
-    zIndex: 9999,
-    textDecoration: "none",
-    transition: "transform 0.2s ease-in-out",
-  }}
-  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
-  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
->
-  <img
-    src="https://www.freeiconspng.com/uploads/logo-whatsapp-png-transparent-background-8.png"
-    alt="WhatsApp Logo"
-    style={{
-      width: "64px",
-      height: "64px",
-      objectFit: "contain",
-    }}
-  />
-</a>
+      <button
+        onClick={() => setShowWaPopup((prev) => !prev)}
+        title="Chat WhatsApp Admin"
+        style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          backgroundColor: "#25D366",
+          border: "none",
+          width: "56px",
+          height: "56px",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 6px 16px rgba(37, 211, 102, 0.4)",
+          zIndex: 9999,
+          cursor: "pointer",
+          transition: "transform 0.2s ease-in-out",
+          padding: 0,
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+      >
+        <img
+          src="https://www.freeiconspng.com/uploads/logo-whatsapp-png-transparent-background-8.png"
+          alt="WhatsApp Logo"
+          style={{
+            width: "64px",
+            height: "64px",
+            objectFit: "contain",
+          }}
+        />
+      </button>
 
       {/* FOOTER DINAMIS */}
       <footer style={{ background: "#1e293b", borderTop: "1px solid #334155", padding: "24px 16px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>
