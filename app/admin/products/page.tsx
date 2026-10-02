@@ -30,6 +30,7 @@ export default function ProductsAndTransactionsPage() {
   const [editManualKeys, setEditManualKeys] = useState("");
   const [editGeneratorApiUrl, setEditGeneratorApiUrl] = useState("");
   const [editAppUrl, setEditAppUrl] = useState("");
+  const [editBlogUrl, setEditBlogUrl] = useState(""); // FIELD BARU: editBlogUrl
   const [editImageUrl, setEditImageUrl] = useState("");
   const [editShowInCarousel, setEditShowInCarousel] = useState(true);
   const [editTelegramFileId, setEditTelegramFileId] = useState("");
@@ -134,6 +135,12 @@ export default function ProductsAndTransactionsPage() {
     }
 
     try {
+      const keysArray = Array.isArray(product.manualKeys)
+        ? product.manualKeys
+        : product.manualKeys
+        ? String(product.manualKeys).split(/[\n,]+/).map((k) => k.trim()).filter(Boolean)
+        : [];
+
       const payload = {
         adminPassword,
         id: String(product.id || "").trim(),
@@ -142,9 +149,10 @@ export default function ProductsAndTransactionsPage() {
         type: product.type || "DOWNLOAD",
         hasLicense: product.hasLicense !== false,
         licenseMode: product.licenseMode || "AUTO",
-        manualKeys: product.manualKeys || "",
+        manualKeys: keysArray,
         generatorApiUrl: product.generatorApiUrl || "",
         appUrl: product.appUrl || "",
+        blogUrl: product.blogUrl || "",
         imageUrl: product.imageUrl || "",
         showInCarousel: product.showInCarousel !== false,
         telegramFileId: product.telegramFileId || "",
@@ -215,9 +223,16 @@ export default function ProductsAndTransactionsPage() {
     setEditType(product.type || "DOWNLOAD");
     setEditHasLicense(product.hasLicense !== false);
     setEditLicenseMode(product.licenseMode || "AUTO");
-    setEditManualKeys(product.manualKeys || "");
+
+    if (Array.isArray(product.manualKeys)) {
+      setEditManualKeys(product.manualKeys.join("\n"));
+    } else {
+      setEditManualKeys(product.manualKeys || "");
+    }
+
     setEditGeneratorApiUrl(product.generatorApiUrl || "");
     setEditAppUrl(product.appUrl || "");
+    setEditBlogUrl(product.blogUrl || "");
     setEditImageUrl(product.imageUrl || "");
     setEditShowInCarousel(product.showInCarousel !== false);
     setEditTelegramFileId(product.telegramFileId || "");
@@ -230,6 +245,9 @@ export default function ProductsAndTransactionsPage() {
     setSavingEdit(true);
     try {
       const cleanPrice = parseInt(editPrice.toString().replace(/\D/g, ""), 10) || 0;
+      const keysArray = editManualKeys
+        ? editManualKeys.split(/[\n,]+/).map((k) => k.trim()).filter(Boolean)
+        : [];
 
       const res = await fetch("/api/admin/products", {
         method: "POST",
@@ -242,9 +260,10 @@ export default function ProductsAndTransactionsPage() {
           type: editType,
           hasLicense: Boolean(editHasLicense),
           licenseMode: editLicenseMode,
-          manualKeys: editManualKeys,
+          manualKeys: keysArray,
           generatorApiUrl: editGeneratorApiUrl,
           appUrl: editAppUrl.trim(),
+          blogUrl: editBlogUrl.trim(),
           imageUrl: editImageUrl.trim(),
           showInCarousel: Boolean(editShowInCarousel),
           telegramFileId: editTelegramFileId.trim(),
@@ -466,8 +485,12 @@ export default function ProductsAndTransactionsPage() {
                   </div>
 
                   <div style={{ background: "#0f172a", padding: "12px", borderRadius: "8px", border: "1px solid #334155", marginBottom: "12px" }}>
-                    <label style={{ display: "block", fontSize: "0.8rem", color: "#38bdf8", marginBottom: "4px" }}>URL Gambar Produk / Banner Carousel</label>
-                    <input type="url" placeholder="https://domain.com/gambar.png" value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", marginBottom: "8px" }} />
+                    <label style={{ display: "block", fontSize: "0.8rem", color: "#38bdf8", marginBottom: "4px" }}>URL Gambar Produk (`imageUrl`)</label>
+                    <input type="url" placeholder="https://blogger.googleusercontent.com/img/..." value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", marginBottom: "8px" }} />
+
+                    <label style={{ display: "block", fontSize: "0.8rem", color: "#38bdf8", marginBottom: "4px" }}>URL Artikel Blogspot (`blogUrl`)</label>
+                    <input type="url" placeholder="https://www.buanamedia.my.id/2026/08/YTCopyright.html" value={editBlogUrl} onChange={(e) => setEditBlogUrl(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", marginBottom: "8px" }} />
+
                     <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.8rem", color: "#cbd5e1" }}>
                       <input type="checkbox" checked={editShowInCarousel} onChange={(e) => setEditShowInCarousel(e.target.checked)} /> Tampilkan di Banner Carousel Halaman Utama?
                     </label>
@@ -496,7 +519,7 @@ export default function ProductsAndTransactionsPage() {
                       </select>
                       {editLicenseMode === "MANUAL" && (
                         <div>
-                          <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>Daftar Serial Key:</label>
+                          <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "4px" }}>Daftar Serial Key (Satu key per baris):</label>
                           <textarea rows={3} value={editManualKeys} onChange={(e) => setEditManualKeys(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", fontFamily: "monospace" }} />
                         </div>
                       )}
