@@ -8,6 +8,16 @@ export const dynamic = "force-dynamic";
 // URL Web App Google Apps Script Anda
 const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwifb1OzsmJ6BeexYfLPV1av2LogDJ36Hc6CJCpmYfkhfFv6xKc-1mAin3nlI6WR8w/exec";
 
+// Nilai Default Bawaan Sistem
+const DEFAULT_SETTINGS = {
+  headerTitle: "Buana Media Store",
+  headerIcon: "🛒",
+  gridColumns: 4,
+  widgetPosition: "BELOW_CAROUSEL",
+  footerText: "© Buana Media. All rights reserved.",
+  adminWhatsapp: "081414159500",
+};
+
 export default function AdminDashboardPage() {
   const [adminPassword, setAdminPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,12 +43,13 @@ export default function AdminDashboardPage() {
   const [imageUrl, setImageUrl] = useState("");
   const [showInCarousel, setShowInCarousel] = useState(true);
 
-  // Fitur Baru: Pengaturan Tampilan Toko (Layout Settings)
-  const [headerTitle, setHeaderTitle] = useState("STORE Engine");
-  const [headerIcon, setHeaderIcon] = useState("🛒");
-  const [gridColumns, setGridColumns] = useState(4);
-  const [widgetPosition, setWidgetPosition] = useState("BELOW_CAROUSEL");
-  const [footerText, setFooterText] = useState("© PT Buana Media Bersama. All rights reserved.");
+  // Fitur Baru: Pengaturan Tampilan Toko (Layout Settings) & Nomor WA
+  const [headerTitle, setHeaderTitle] = useState(DEFAULT_SETTINGS.headerTitle);
+  const [headerIcon, setHeaderIcon] = useState(DEFAULT_SETTINGS.headerIcon);
+  const [gridColumns, setGridColumns] = useState(DEFAULT_SETTINGS.gridColumns);
+  const [widgetPosition, setWidgetPosition] = useState(DEFAULT_SETTINGS.widgetPosition);
+  const [footerText, setFooterText] = useState(DEFAULT_SETTINGS.footerText);
+  const [adminWhatsapp, setAdminWhatsapp] = useState(DEFAULT_SETTINGS.adminWhatsapp);
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Modus Input File: "UPLOAD" (Direct GAS) atau "MANUAL_ID" (File Telegram Besar)
@@ -90,11 +101,12 @@ export default function AdminDashboardPage() {
       const res = await fetch(`/api/admin/settings?password=${encodeURIComponent(pwd)}`);
       const data = await res.json();
       if (res.ok && data.settings) {
-        setHeaderTitle(data.settings.headerTitle || "STORE Engine");
-        setHeaderIcon(data.settings.headerIcon || "🛒");
-        setGridColumns(data.settings.gridColumns || 4);
-        setWidgetPosition(data.settings.widgetPosition || "BELOW_CAROUSEL");
-        setFooterText(data.settings.footerText || "© PT Buana Media Bersama. All rights reserved.");
+        setHeaderTitle(data.settings.headerTitle || DEFAULT_SETTINGS.headerTitle);
+        setHeaderIcon(data.settings.headerIcon || DEFAULT_SETTINGS.headerIcon);
+        setGridColumns(data.settings.gridColumns || DEFAULT_SETTINGS.gridColumns);
+        setWidgetPosition(data.settings.widgetPosition || DEFAULT_SETTINGS.widgetPosition);
+        setFooterText(data.settings.footerText || DEFAULT_SETTINGS.footerText);
+        setAdminWhatsapp(data.settings.adminWhatsapp || DEFAULT_SETTINGS.adminWhatsapp);
       }
     } catch (e: any) {
       console.warn("Gagal memuat pengaturan tampilan:", e.message);
@@ -115,6 +127,7 @@ export default function AdminDashboardPage() {
           gridColumns: Number(gridColumns),
           widgetPosition,
           footerText,
+          adminWhatsapp,
         }),
       });
 
@@ -129,6 +142,18 @@ export default function AdminDashboardPage() {
       alert("Error menyimpan pengaturan: " + err.message);
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  // Fungsi Reset Pengaturan Layout ke Default / Bawaan
+  const handleResetSettings = () => {
+    if (confirm("Apakah Anda yakin ingin mengembalikan seluruh pengaturan layout ke standar bawaan?")) {
+      setHeaderTitle(DEFAULT_SETTINGS.headerTitle);
+      setHeaderIcon(DEFAULT_SETTINGS.headerIcon);
+      setGridColumns(DEFAULT_SETTINGS.gridColumns);
+      setWidgetPosition(DEFAULT_SETTINGS.widgetPosition);
+      setFooterText(DEFAULT_SETTINGS.footerText);
+      setAdminWhatsapp(DEFAULT_SETTINGS.adminWhatsapp);
     }
   };
 
@@ -183,7 +208,9 @@ export default function AdminDashboardPage() {
   const copyBlogspotSnippet = (product: any) => {
     const formattedPrice = Number(product.price || 0).toLocaleString("id-ID");
     const waText = encodeURIComponent(`Halo Admin, saya ingin bertanya tentang produk '${product.name}' (${product.id}).`);
-    const waLink = `https://wa.me/6281414159500?text=${waText}`;
+    const cleanWaNumber = adminWhatsapp.replace(/\D/g, "");
+    const formattedWa = cleanWaNumber.startsWith("0") ? "62" + cleanWaNumber.slice(1) : cleanWaNumber;
+    const waLink = `https://wa.me/${formattedWa}?text=${waText}`;
 
     const snippet = `<!-- Script Widget STORE Engine -->
 <script src="https://undig.buanamedia.my.id/blogspot/widget.js"></script>
@@ -465,7 +492,17 @@ export default function AdminDashboardPage() {
 
           {/* FORM PENGATURAN TAMPILAN HALAMAN UTAMA */}
           <div className="dash-card" style={{ background: "#1e293b", padding: "24px", borderRadius: "16px", border: "1px solid #0284c7", marginBottom: "32px" }}>
-            <h2 style={{ fontSize: "1.1rem", color: "#38bdf8", marginTop: 0, marginBottom: "16px" }}>⚙️ Pengaturan Layout & Tampilan Halaman Utama</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+              <h2 style={{ fontSize: "1.1rem", color: "#38bdf8", margin: 0 }}>⚙️ Pengaturan Layout & Tampilan Halaman Utama</h2>
+              <button
+                type="button"
+                onClick={handleResetSettings}
+                style={{ background: "#475569", color: "#f8fafc", border: "1px solid #64748b", padding: "6px 14px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "bold", cursor: "pointer" }}
+              >
+                ↺ Reset ke Bawaan
+              </button>
+            </div>
+
             <form onSubmit={handleSaveSettings} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Icon Header</label>
@@ -510,6 +547,16 @@ export default function AdminDashboardPage() {
                   <option value="ABOVE_CAROUSEL">Di Atas Carousel</option>
                   <option value="HIDDEN">Sembunyikan Widget</option>
                 </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", color: "#38bdf8", marginBottom: "4px", fontWeight: "bold" }}>Nomor WhatsApp Admin</label>
+                <input
+                  type="text"
+                  placeholder="081414159500"
+                  value={adminWhatsapp}
+                  onChange={(e) => setAdminWhatsapp(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #0284c7", background: "#0f172a", color: "#38bdf8", fontWeight: "bold" }}
+                />
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
                 <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Teks Isi Footer</label>
