@@ -38,6 +38,7 @@ export default function AdminDashboardPage() {
   const [manualKeys, setManualKeys] = useState("");
   const [generatorApiUrl, setGeneratorApiUrl] = useState("");
   const [appUrl, setAppUrl] = useState("");
+  const [blogUrl, setBlogUrl] = useState(""); // FIELD BARU: blogUrl
 
   // Foto Produk & Carousel
   const [imageUrl, setImageUrl] = useState("");
@@ -52,7 +53,7 @@ export default function AdminDashboardPage() {
   const [adminWhatsapp, setAdminWhatsapp] = useState(DEFAULT_SETTINGS.adminWhatsapp);
   const [savingSettings, setSavingSettings] = useState(false);
 
-  // Modus Input File: "UPLOAD" (Direct GAS) atau "MANUAL_ID" (File Telegram Besar)
+  // Modus Input File
   const [uploadMode, setUploadMode] = useState<"UPLOAD" | "MANUAL_ID">("UPLOAD");
   const [file, setFile] = useState<File | null>(null);
   const [manualTelegramFileId, setManualTelegramFileId] = useState("");
@@ -186,6 +187,7 @@ export default function AdminDashboardPage() {
     setHasLicense(true);
     setLicenseMode("AUTO");
     setAppUrl("");
+    setBlogUrl("");
     setImageUrl("");
     setShowInCarousel(true);
     setManualKeys("");
@@ -206,14 +208,12 @@ export default function AdminDashboardPage() {
     const snippet = `<!-- Script Widget STORE Engine -->
 <script src="https://undig.buanamedia.my.id/blogspot/widget.js"></script>
 
-<!-- Container 2 Tombol (Presisi Sama Tinggi & Rapi) -->
+<!-- Container 2 Tombol -->
 <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 16px 0;">
-  <!-- 1. Tombol Beli Aplikasi -->
   <button type="button" id="${product.id}" class="se-buy-btn" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 24px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; box-sizing: border-box; font-family: inherit;">
     Beli ${product.name} - Rp ${formattedPrice}
   </button>
 
-  <!-- 2. Tombol Hubungi Admin via WhatsApp -->
   <a href="${waLink}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 24px; background-color: #25D366; color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; text-decoration: none; box-sizing: border-box; font-family: inherit;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
@@ -240,6 +240,12 @@ export default function AdminDashboardPage() {
     }
 
     try {
+      const keysArray = Array.isArray(product.manualKeys)
+        ? product.manualKeys
+        : product.manualKeys
+        ? String(product.manualKeys).split(/[\n,]+/).map((k) => k.trim()).filter(Boolean)
+        : [];
+
       const payload = {
         adminPassword,
         id: String(product.id || "").trim(),
@@ -248,9 +254,10 @@ export default function AdminDashboardPage() {
         type: product.type || "DOWNLOAD",
         hasLicense: product.hasLicense !== false,
         licenseMode: product.licenseMode || "AUTO",
-        manualKeys: product.manualKeys || "",
+        manualKeys: keysArray,
         generatorApiUrl: product.generatorApiUrl || "",
         appUrl: product.appUrl || "",
+        blogUrl: product.blogUrl || "",
         imageUrl: product.imageUrl || "",
         showInCarousel: product.showInCarousel !== false,
         telegramFileId: product.telegramFileId || "",
@@ -283,9 +290,16 @@ export default function AdminDashboardPage() {
     setType(product.type || "DOWNLOAD");
     setHasLicense(product.hasLicense !== false);
     setLicenseMode(product.licenseMode || "AUTO");
-    setManualKeys(product.manualKeys || "");
+
+    if (Array.isArray(product.manualKeys)) {
+      setManualKeys(product.manualKeys.join("\n"));
+    } else {
+      setManualKeys(product.manualKeys || "");
+    }
+
     setGeneratorApiUrl(product.generatorApiUrl || "");
     setAppUrl(product.appUrl || "");
+    setBlogUrl(product.blogUrl || "");
     setImageUrl(product.imageUrl || "");
     setShowInCarousel(product.showInCarousel !== false);
 
@@ -366,6 +380,11 @@ export default function AdminDashboardPage() {
       const cleanPriceInput = parseInt(price.toString().replace(/\D/g, ""), 10) || 0;
       const isGestun = type === "GESTUN";
 
+      // Konversi manualKeys String menjadi Array
+      const keysArray = manualKeys
+        ? manualKeys.split(/[\n,]+/).map((k) => k.trim()).filter(Boolean)
+        : [];
+
       setLoadingStatus("Menyimpan konfigurasi produk ke Firestore...");
       const res = await fetch("/api/admin/products", {
         method: "POST",
@@ -378,9 +397,10 @@ export default function AdminDashboardPage() {
           type,
           hasLicense: isGestun ? false : Boolean(hasLicense),
           licenseMode: isGestun ? "AUTO" : licenseMode,
-          manualKeys,
-          generatorApiUrl,
+          manualKeys: keysArray,
+          generatorApiUrl: generatorApiUrl.trim(),
           appUrl: appUrl.trim(),
+          blogUrl: blogUrl.trim(),
           imageUrl: imageUrl.trim(),
           showInCarousel: Boolean(showInCarousel),
           telegramFileId: isGestun ? "" : finalTelegramFileId,
@@ -434,7 +454,6 @@ export default function AdminDashboardPage() {
       `}</style>
 
       {!isAuthenticated ? (
-        /* Layar Login Admin */
         <div style={{ maxWidth: "400px", width: "100%", margin: "60px auto 0 auto", background: "#1e293b", padding: "24px", borderRadius: "16px", border: "1px solid #334155", textAlign: "center" }}>
           <h2 style={{ color: "#38bdf8", marginTop: 0 }}>STORE Admin Login</h2>
           <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginBottom: "24px" }}>Masukkan Password Admin Vercel Anda untuk melanjutkan.</p>
@@ -456,7 +475,6 @@ export default function AdminDashboardPage() {
           </form>
         </div>
       ) : (
-        /* Dashboard Admin Main View */
         <div style={{ maxWidth: "1050px", margin: "0 auto" }}>
           <div className="dash-header dash-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", background: "#1e293b", padding: "20px 24px", borderRadius: "12px", border: "1px solid #334155" }}>
             <div>
@@ -628,7 +646,7 @@ export default function AdminDashboardPage() {
                   type="text"
                   required
                   readOnly={isEditing}
-                  placeholder="contoh: clipprovit-pro atau saas-tool"
+                  placeholder="contoh: ytcopyright atau saas-tool"
                   value={id}
                   onChange={(e) => setId(e.target.value)}
                   style={{ 
@@ -649,7 +667,7 @@ export default function AdminDashboardPage() {
                 <input
                   type="text"
                   required
-                  placeholder="contoh: ClipProvit Software License"
+                  placeholder="contoh: Yt Copyright Fix"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
@@ -668,16 +686,26 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              {/* FOTO PRODUK & CAROUSEL TOGGLE */}
+              {/* FOTO PRODUK, BLOGURL & CAROUSEL TOGGLE */}
               <div style={{ background: "#0f172a", padding: "16px", borderRadius: "10px", border: "1px solid #334155", marginBottom: "16px" }}>
-                <h3 style={{ fontSize: "0.85rem", color: "#38bdf8", marginTop: 0, marginBottom: "10px" }}>🖼️ Foto Aplikasi & Banner Carousel</h3>
+                <h3 style={{ fontSize: "0.85rem", color: "#38bdf8", marginTop: 0, marginBottom: "10px" }}>🖼️ Foto Aplikasi, URL Blogspot & Carousel</h3>
                 <div style={{ marginBottom: "12px" }}>
-                  <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>URL Foto Produk / Logo Aplikasi</label>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>URL Foto Produk / Logo Aplikasi (`imageUrl`)</label>
                   <input
                     type="url"
-                    placeholder="https://domain.com/foto-produk.png"
+                    placeholder="https://blogger.googleusercontent.com/img/..."
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
+                  />
+                </div>
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>URL Artikel Blogspot Produk (`blogUrl`)</label>
+                  <input
+                    type="url"
+                    placeholder="https://www.buanamedia.my.id/2026/08/YTCopyright.html"
+                    value={blogUrl}
+                    onChange={(e) => setBlogUrl(e.target.value)}
                     style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
                   />
                 </div>
@@ -734,10 +762,10 @@ export default function AdminDashboardPage() {
 
                       {licenseMode === "MANUAL" && (
                         <div>
-                          <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Daftar Serial Key (Pisahkan dengan baris baru / koma):</label>
+                          <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Daftar Serial Key (Satu key per baris):</label>
                           <textarea
                             rows={4}
-                            placeholder={"CLIP-KEY-111\nCLIP-KEY-222\nCLIP-KEY-333"}
+                            placeholder={"YTAF-YGVE-UPY5-BG7V\nYTAF-7F5L-Y8ZV-APNN"}
                             value={manualKeys}
                             onChange={(e) => setManualKeys(e.target.value)}
                             style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
