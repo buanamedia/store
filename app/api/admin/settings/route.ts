@@ -1,20 +1,17 @@
 import { NextResponse } from "next/server";
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase-admin";
 
-// Konfigurasi Firebase Project Anda
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+export const dynamic = "force-dynamic";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-// Inisialisasi Firebase App & Firestore
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-const db = getFirestore(app);
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders });
+}
 
 // GET: Membaca Pengaturan Tampilan Toko dari Firestore
 export async function GET(request: Request) {
@@ -22,24 +19,23 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const password = searchParams.get("password");
 
-    // Verifikasi Password Admin dari Environment Variable
+    // Verifikasi Password Admin
     if (!password || password !== process.env.ADMIN_PASSWORD) {
       return NextResponse.json(
         { success: false, message: "Password admin tidak valid!" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
-    const docRef = doc(db, "settings", "store");
-    const docSnap = await getDoc(docRef);
+    const docSnap = await db.collection("settings").doc("store").get();
 
-    if (docSnap.exists()) {
-      return NextResponse.json({
-        success: true,
-        settings: docSnap.data(),
-      });
+    if (docSnap.exists) {
+      return NextResponse.json(
+        { success: true, settings: docSnap.data() },
+        { headers: corsHeaders }
+      );
     } else {
-      // Default Settings jika dokumen belum ada di Firestore
+      // Default Settings jika dokumen belum ada
       const defaultSettings = {
         headerTitle: "STORE Engine",
         headerIcon: "🛒",
@@ -48,15 +44,15 @@ export async function GET(request: Request) {
         footerText: "© PT Buana Media Bersama. All rights reserved.",
       };
 
-      return NextResponse.json({
-        success: true,
-        settings: defaultSettings,
-      });
+      return NextResponse.json(
+        { success: true, settings: defaultSettings },
+        { headers: corsHeaders }
+      );
     }
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: "Gagal membaca pengaturan: " + error.message },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -64,7 +60,7 @@ export async function GET(request: Request) {
 // POST: Menyimpan Pengaturan Tampilan Toko ke Firestore
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const {
       adminPassword,
       headerTitle,
@@ -78,7 +74,7 @@ export async function POST(request: Request) {
     if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
       return NextResponse.json(
         { success: false, message: "Password admin tidak valid!" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -91,19 +87,21 @@ export async function POST(request: Request) {
       updatedAt: new Date().toISOString(),
     };
 
-    // Simpan/Update Dokumen di Koleksi 'settings', Dokumen ID 'store'
-    const docRef = doc(db, "settings", "store");
-    await setDoc(docRef, payload, { merge: true });
+    // Simpan ke Firestore
+    await db.collection("settings").doc("store").set(payload, { merge: true });
 
-    return NextResponse.json({
-      success: true,
-      message: "Pengaturan tampilan berhasil diperbarui!",
-      settings: payload,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Pengaturan tampilan berhasil diperbarui!",
+        settings: payload,
+      },
+      { headers: corsHeaders }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: "Gagal menyimpan pengaturan: " + error.message },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
