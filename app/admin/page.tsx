@@ -56,6 +56,7 @@ export default function AdminDashboardPage() {
   const [uploadMode, setUploadMode] = useState<"UPLOAD" | "MANUAL_ID">("UPLOAD");
   const [file, setFile] = useState<File | null>(null);
   const [manualTelegramFileId, setManualTelegramFileId] = useState("");
+  const [existingTelegramFileId, setExistingTelegramFileId] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("");
@@ -82,7 +83,6 @@ export default function AdminDashboardPage() {
         setProducts(data.products || []);
       } else {
         alert(data.message || "Password Salah!");
-
         sessionStorage.removeItem("admin_session_pwd");
         setIsAuthenticated(false);
       }
@@ -158,7 +158,6 @@ export default function AdminDashboardPage() {
 
     if (adminPassword.trim().length > 0) {
       sessionStorage.setItem("admin_session_pwd", adminPassword);
-
       setIsAuthenticated(true);
       loadProducts(adminPassword);
       loadSettings(adminPassword);
@@ -193,6 +192,7 @@ export default function AdminDashboardPage() {
     setGeneratorApiUrl("");
     setUploadMode("UPLOAD");
     setManualTelegramFileId("");
+    setExistingTelegramFileId("");
     setFile(null);
   };
 
@@ -240,14 +240,26 @@ export default function AdminDashboardPage() {
     }
 
     try {
+      const payload = {
+        adminPassword,
+        id: String(product.id || "").trim(),
+        name: String(product.name || "").trim(),
+        price: newPrice,
+        type: product.type || "DOWNLOAD",
+        hasLicense: product.hasLicense !== false,
+        licenseMode: product.licenseMode || "AUTO",
+        manualKeys: product.manualKeys || "",
+        generatorApiUrl: product.generatorApiUrl || "",
+        appUrl: product.appUrl || "",
+        imageUrl: product.imageUrl || "",
+        showInCarousel: product.showInCarousel !== false,
+        telegramFileId: product.telegramFileId || "",
+      };
+
       const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          adminPassword,
-          ...product,
-          price: newPrice,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -277,6 +289,7 @@ export default function AdminDashboardPage() {
     setImageUrl(product.imageUrl || "");
     setShowInCarousel(product.showInCarousel !== false);
 
+    setExistingTelegramFileId(product.telegramFileId || "");
     if (product.telegramFileId) {
       setUploadMode("MANUAL_ID");
       setManualTelegramFileId(product.telegramFileId);
@@ -345,6 +358,8 @@ export default function AdminDashboardPage() {
           finalTelegramFileId = gasData.telegramFileId;
         } else if (uploadMode === "MANUAL_ID") {
           finalTelegramFileId = manualTelegramFileId.trim();
+        } else if (isEditing && !file) {
+          finalTelegramFileId = existingTelegramFileId;
         }
       }
 
@@ -358,16 +373,16 @@ export default function AdminDashboardPage() {
         body: JSON.stringify({
           adminPassword,
           id: id.trim().toLowerCase().replace(/\s+/g, "-"),
-          name,
+          name: name.trim(),
           price: cleanPriceInput,
           type,
-          hasLicense: isGestun ? false : hasLicense,
+          hasLicense: isGestun ? false : Boolean(hasLicense),
           licenseMode: isGestun ? "AUTO" : licenseMode,
           manualKeys,
           generatorApiUrl,
-          appUrl,
-          imageUrl,
-          showInCarousel,
+          appUrl: appUrl.trim(),
+          imageUrl: imageUrl.trim(),
+          showInCarousel: Boolean(showInCarousel),
           telegramFileId: isGestun ? "" : finalTelegramFileId,
         }),
       });
@@ -449,9 +464,7 @@ export default function AdminDashboardPage() {
               <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>buanamedia.my.id</span>
             </div>
             
-            {/* ACTION BUTTONS DI HEADER DASHBOARD */}
             <div className="dash-header-actions" style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-              {/* 1. TOMBOL HOME */}
               <a
                 href="https://buanamedia.my.id"
                 target="_blank"
@@ -461,7 +474,6 @@ export default function AdminDashboardPage() {
                 🏠 Home
               </a>
 
-              {/* 2. TOMBOL GALERI (BERADA DI ANTARA HOME DAN PRODUK & TRANSAKSI) */}
               <Link
                 href="/admin/gallery"
                 style={{ background: "#0284c7", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
@@ -469,7 +481,6 @@ export default function AdminDashboardPage() {
                 📁 Cloud Gallery
               </Link>
 
-              {/* 3. TOMBOL PRODUK & TRANSAKSI */}
               <Link
                 href="/admin/products"
                 style={{ background: "#10b981", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
@@ -477,7 +488,6 @@ export default function AdminDashboardPage() {
                 📦 Produk & Transaksi
               </Link>
 
-              {/* 4. TOMBOL LOGOUT */}
               <button
                 onClick={() => {
                   sessionStorage.removeItem("admin_session_pwd");
@@ -695,7 +705,6 @@ export default function AdminDashboardPage() {
                 </select>
               </div>
 
-              {/* TAMPILAN KODE LISENSI SONYA BERLAKU JIKA BUKAN GESTUN */}
               {type !== "GESTUN" && (
                 <>
                   <div style={{ marginBottom: "16px" }}>
@@ -753,7 +762,6 @@ export default function AdminDashboardPage() {
                 </>
               )}
 
-              {/* TAMPILAN KHUSUS BERDASARKAN TIPE PENJUALAN */}
               {type === "ACCESS" && (
                 <div style={{ marginBottom: "20px" }}>
                   <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "6px" }}>URL Portal Web / Aplikasi (`appUrl`)</label>
@@ -804,7 +812,7 @@ export default function AdminDashboardPage() {
                         style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
                       />
                       {isEditing && (
-                        <small style={{ color: "#94a3b8", fontSize: "0.75rem", display: "block", marginTop: "4px" }}>
+                        <small style={{ color: "#38bdf8", fontSize: "0.75rem", display: "block", marginTop: "4px" }}>
                           Biarkan kosong jika tidak ingin mengganti file eksis.
                         </small>
                       )}
@@ -814,7 +822,7 @@ export default function AdminDashboardPage() {
                       <input
                         type="text"
                         required={uploadMode === "MANUAL_ID"}
-                        placeholder="Tempel file_id Telegram di sini (contoh: BQACAg...)"
+                        placeholder="Tempel file_id Telegram di sini"
                         value={manualTelegramFileId}
                         onChange={(e) => setManualTelegramFileId(e.target.value)}
                         style={{ width: "100%", padding: "10px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
@@ -858,7 +866,7 @@ export default function AdminDashboardPage() {
             ) : products.length === 0 ? (
               <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>Belum ada produk yang tersimpan.</p>
             ) : (
-              <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>
                   <thead>
                     <tr style={{ borderBottom: "1px solid #334155", color: "#94a3b8" }}>
