@@ -8,28 +8,58 @@ export default function HomePage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch Daftar Produk dari API
+  // Settings Tampilan Store dari Database
+  const [settings, setSettings] = useState<{
+    headerTitle: string;
+    headerIcon: string;
+    gridColumns: number;
+    widgetPosition: string;
+    footerText: string;
+  }>({
+    headerTitle: "STORE Engine",
+    headerIcon: "🛒",
+    gridColumns: 4,
+    widgetPosition: "BELOW_CAROUSEL",
+    footerText: "© PT Buana Media Bersama. All rights reserved.",
+  });
+
+  // Fetch Daftar Produk & Pengaturan Tampilan Toko
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch("/api/products");
-        const data = await res.json();
-        if (res.ok && data.products) {
-          // Filter agar produk GESTUN disembunyikan dari grid produk biasa
-          const filtered = data.products.filter((p: any) => p.id !== "GESTUN");
+        // 1. Fetch Produk
+        const resProd = await fetch("/api/products");
+        const dataProd = await resProd.json();
+        if (resProd.ok && dataProd.products) {
+          const filtered = dataProd.products.filter((p: any) => p.id !== "GESTUN");
           setProducts(filtered);
         }
+
+        // 2. Fetch Pengaturan Tampilan Toko
+        const resSet = await fetch("/api/admin/settings");
+        const dataSet = await resSet.json();
+        if (resSet.ok && dataSet.settings) {
+          setSettings({
+            headerTitle: dataSet.settings.headerTitle || "STORE Engine",
+            headerIcon: dataSet.settings.headerIcon || "🛒",
+            gridColumns: Number(dataSet.settings.gridColumns) || 4,
+            widgetPosition: dataSet.settings.widgetPosition || "BELOW_CAROUSEL",
+            footerText: dataSet.settings.footerText || "© PT Buana Media Bersama. All rights reserved.",
+          });
+        }
       } catch (err) {
-        console.error("Gagal mengambil data produk:", err);
+        console.error("Gagal mengambil data toko:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
 
-  // Susun Slide Carousel: Gabungan Gestun + Produk Digital
+  // Susun Slide Carousel: Gabungan Gestun + Produk Digital yang Dicentang "showInCarousel !== false"
+  const carouselProducts = products.filter((p) => p.showInCarousel !== false);
+
   const slides = [
     {
       id: "slide-gestun",
@@ -38,20 +68,21 @@ export default function HomePage() {
       badge: "LAYANAN UTAMA",
       ctaText: "Tarik Tunai Sekarang",
       ctaLink: "/gestun",
-      imageUrl: "", // Layanan utama tidak menggunakan gambar
+      imageUrl: "",
       bgGradient: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
     },
-    ...products.map((p, idx) => ({
+    ...carouselProducts.map((p, idx) => ({
       id: p.id,
       title: `🚀 ${p.name}`,
       subtitle: p.description || "Dapatkan akses lisensi resmi instant untuk otomatisasi workflow Anda.",
       badge: `PRODUK DIGITAL ${idx + 1}`,
       ctaText: `Beli ${p.name} - Rp ${Number(p.price || 0).toLocaleString("id-ID")}`,
       ctaLink: `/checkout/${p.id}`,
-      imageUrl: p.imageUrl || p.image || p.bannerUrl || "", // Mendukung field foto dari Firestore
-      bgGradient: idx % 2 === 0 
-        ? "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" 
-        : "linear-gradient(135deg, #111827 0%, #374151 100%)",
+      imageUrl: p.imageUrl || p.image || p.bannerUrl || "",
+      bgGradient:
+        idx % 2 === 0
+          ? "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
+          : "linear-gradient(135deg, #111827 0%, #374151 100%)",
     })),
   ];
 
@@ -64,14 +95,59 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, [slides.length]);
 
+  // Elemen Widget Promosi Gestun
+  const GestunWidget = (
+    <section style={{ marginBottom: "40px" }}>
+      <div
+        style={{
+          background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+          border: "1px solid #0284c7",
+          borderRadius: "16px",
+          padding: "24px",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "20px",
+        }}
+      >
+        <div style={{ flex: "1 1 300px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+            <span style={{ fontSize: "1.5rem" }}>⚡</span>
+            <h3 style={{ fontSize: "1.2rem", color: "#38bdf8", margin: 0 }}>Fitur Gestun & Tarik Tunai Instant</h3>
+          </div>
+          <p style={{ fontSize: "0.85rem", color: "#94a3b8", margin: 0, lineHeight: "1.6" }}>
+            Butuh dana tunai cepat dari QRIS atau Kartu Kredit? Gunakan layanan pencairan otomatis kami dengan potongan transparan dan verifikasi cepat.
+          </p>
+        </div>
+
+        <Link
+          href="/gestun"
+          style={{
+            padding: "12px 24px",
+            background: "#2563eb",
+            color: "#ffffff",
+            borderRadius: "10px",
+            fontWeight: "bold",
+            fontSize: "0.9rem",
+            textDecoration: "none",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Mulai Tarik Tunai
+        </Link>
+      </div>
+    </section>
+  );
+
   return (
     <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", fontFamily: "sans-serif" }}>
       
-      {/* HEADER / NAVBAR */}
+      {/* HEADER / NAVBAR DINAMIS */}
       <header style={{ background: "#1e293b", borderBottom: "1px solid #334155", padding: "16px 24px", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Link href="/" style={{ fontSize: "1.3rem", fontWeight: "bold", color: "#38bdf8", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px" }}>
-            🛒 <span>STORE Engine</span>
+            <span>{settings.headerIcon}</span> <span>{settings.headerTitle}</span>
           </Link>
 
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
@@ -100,6 +176,9 @@ export default function HomePage() {
       {/* MAIN CONTAINER */}
       <main style={{ maxWidth: "1100px", margin: "0 auto", padding: "24px 16px 60px" }}>
         
+        {/* WIDGET GESTUN (JIKA DIATUR DI ATAS CAROUSEL) */}
+        {settings.widgetPosition === "ABOVE_CAROUSEL" && GestunWidget}
+
         {/* CAROUSEL BANNER HERO RESPONSIVE WITH IMAGE */}
         <section style={{ position: "relative", borderRadius: "20px", overflow: "hidden", marginBottom: "36px", boxShadow: "0 10px 25px rgba(0,0,0,0.4)", border: "1px solid #334155" }}>
           <div
@@ -135,7 +214,7 @@ export default function HomePage() {
                   </div>
                 )}
 
-                {/* TEKS & KONTEN (OTOMATIS BERGESER KE KANAN JIKA GAMBAR ADA) */}
+                {/* TEKS & KONTEN */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                   <span style={{ background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", border: "1px solid #38bdf8", padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", marginBottom: "12px" }}>
                     {slide.badge}
@@ -188,48 +267,8 @@ export default function HomePage() {
           )}
         </section>
 
-        {/* KARTU PROMO KHUSUS GESTUN */}
-        <section style={{ marginBottom: "40px" }}>
-          <div
-            style={{
-              background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
-              border: "1px solid #0284c7",
-              borderRadius: "16px",
-              padding: "24px",
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "20px",
-            }}
-          >
-            <div style={{ flex: "1 1 300px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                <span style={{ fontSize: "1.5rem" }}>⚡</span>
-                <h3 style={{ fontSize: "1.2rem", color: "#38bdf8", margin: 0 }}>Fitur Gestun & Tarik Tunai Instant</h3>
-              </div>
-              <p style={{ fontSize: "0.85rem", color: "#94a3b8", margin: 0, lineHeight: "1.6" }}>
-                Butuh dana tunai cepat dari QRIS atau Kartu Kredit? Gunakan layanan pencairan otomatis kami dengan potongan transparan dan verifikasi cepat.
-              </p>
-            </div>
-
-            <Link
-              href="/gestun"
-              style={{
-                padding: "12px 24px",
-                background: "#2563eb",
-                color: "#ffffff",
-                borderRadius: "10px",
-                fontWeight: "bold",
-                fontSize: "0.9rem",
-                textDecoration: "none",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Mulai Tarik Tunai
-            </Link>
-          </div>
-        </section>
+        {/* WIDGET GESTUN (JIKA DIATUR DI BAWAH CAROUSEL) */}
+        {settings.widgetPosition === "BELOW_CAROUSEL" && GestunWidget}
 
         {/* DAFTAR PRODUK DIGITAL */}
         <section id="products-section">
@@ -247,7 +286,11 @@ export default function HomePage() {
               <p>Belum ada produk digital yang ditambahkan.</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "20px" }}>
+            <div style={{ 
+              display: "grid", 
+              gridTemplateColumns: `repeat(auto-fill, minmax(${Math.floor(1000 / settings.gridColumns)}px, 1fr))`, 
+              gap: "20px" 
+            }}>
               {products.map((product) => (
                 <div
                   key={product.id}
@@ -262,6 +305,13 @@ export default function HomePage() {
                   }}
                 >
                   <div>
+                    {/* FOTO PRODUK DALAM CARD JIKA TERSEDIA */}
+                    {product.imageUrl && (
+                      <div style={{ width: "100%", height: "140px", borderRadius: "8px", overflow: "hidden", marginBottom: "12px", border: "1px solid #334155" }}>
+                        <img src={product.imageUrl} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    )}
+
                     <div style={{ fontSize: "0.75rem", color: "#38bdf8", fontWeight: "bold", marginBottom: "6px" }}>
                       DIGITAL PRODUCT
                     </div>
@@ -306,9 +356,9 @@ export default function HomePage() {
 
       </main>
 
-      {/* FOOTER */}
+      {/* FOOTER DINAMIS */}
       <footer style={{ background: "#1e293b", borderTop: "1px solid #334155", padding: "24px 16px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>
-        <p style={{ margin: 0 }}>© {new Date().getFullYear()} PT Buana Media Bersama. All rights reserved.</p>
+        <p style={{ margin: 0 }}>{settings.footerText}</p>
       </footer>
 
     </div>
