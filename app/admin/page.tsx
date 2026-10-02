@@ -38,7 +38,7 @@ export default function AdminDashboardPage() {
   const [manualKeys, setManualKeys] = useState("");
   const [generatorApiUrl, setGeneratorApiUrl] = useState("");
   const [appUrl, setAppUrl] = useState("");
-  const [blogUrl, setBlogUrl] = useState(""); // FIELD BARU: blogUrl
+  const [blogUrl, setBlogUrl] = useState("");
 
   // Foto Produk & Carousel
   const [imageUrl, setImageUrl] = useState("");
@@ -225,61 +225,6 @@ export default function AdminDashboardPage() {
     navigator.clipboard.writeText(snippet);
     setCopiedId(product.id);
     setTimeout(() => setCopiedId(null), 3000);
-  };
-
-  const handleEditPrice = async (product: any) => {
-    const inputPrice = prompt(`Masukkan harga baru untuk produk '${product.name}' (Rp):`, product.price);
-
-    if (inputPrice === null) return;
-
-    const newPrice = parseInt(inputPrice.toString().replace(/\D/g, ""), 10);
-
-    if (isNaN(newPrice) || newPrice < 0) {
-      alert("Harga tidak valid!");
-      return;
-    }
-
-    try {
-      const keysArray = Array.isArray(product.manualKeys)
-        ? product.manualKeys
-        : product.manualKeys
-        ? String(product.manualKeys).split(/[\n,]+/).map((k) => k.trim()).filter(Boolean)
-        : [];
-
-      const payload = {
-        adminPassword,
-        id: String(product.id || "").trim(),
-        name: String(product.name || "").trim(),
-        price: newPrice,
-        type: product.type || "DOWNLOAD",
-        hasLicense: product.hasLicense !== false,
-        licenseMode: product.licenseMode || "AUTO",
-        manualKeys: keysArray,
-        generatorApiUrl: product.generatorApiUrl || "",
-        appUrl: product.appUrl || "",
-        blogUrl: product.blogUrl || "",
-        imageUrl: product.imageUrl || "",
-        showInCarousel: product.showInCarousel !== false,
-        telegramFileId: product.telegramFileId || "",
-      };
-
-      const res = await fetch("/api/admin/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        alert(`Harga produk '${product.name}' berhasil diubah menjadi Rp ${newPrice.toLocaleString("id-ID")}!`);
-        loadProducts(adminPassword);
-      } else {
-        alert(`Gagal merubah harga: ${data.message}`);
-      }
-    } catch (err: any) {
-      alert("Error saat merubah harga: " + err.message);
-    }
   };
 
   const handleEditFullProduct = (product: any) => {
@@ -945,22 +890,6 @@ export default function AdminDashboardPage() {
                               }}
                             >
                               ✏️ Edit Lengkap
-                            </button>
-                            <button
-                              onClick={() => handleEditPrice(p)}
-                              style={{
-                                background: "#f59e0b",
-                                color: "#fff",
-                                border: "none",
-                                padding: "6px 10px",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "0.75rem",
-                                fontWeight: "bold",
-                                whiteSpace: "nowrap"
-                              }}
-                            >
-                              💰 Edit Harga
                             </button>
                             <button
                               onClick={() => copyBlogspotSnippet(p)}
