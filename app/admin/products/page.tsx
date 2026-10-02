@@ -30,7 +30,7 @@ export default function ProductsAndTransactionsPage() {
   const [editManualKeys, setEditManualKeys] = useState("");
   const [editGeneratorApiUrl, setEditGeneratorApiUrl] = useState("");
   const [editAppUrl, setEditAppUrl] = useState("");
-  const [editBlogUrl, setEditBlogUrl] = useState(""); // FIELD BARU: editBlogUrl
+  const [editBlogUrl, setEditBlogUrl] = useState("");
   const [editImageUrl, setEditImageUrl] = useState("");
   const [editShowInCarousel, setEditShowInCarousel] = useState(true);
   const [editTelegramFileId, setEditTelegramFileId] = useState("");
@@ -274,7 +274,7 @@ export default function ProductsAndTransactionsPage() {
       if (res.ok && data.success) {
         alert(`Produk '${editingProduct.id}' berhasil diperbarui!`);
         setEditingProduct(null);
-        loadProducts(adminPassword);
+        await loadProducts(adminPassword);
       } else {
         alert(`Gagal memperbarui: ${data.message}`);
       }
