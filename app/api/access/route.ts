@@ -44,16 +44,32 @@ export async function GET(request: Request) {
       );
     }
 
-    // 2. Ambil Detail Produk
+    // 2. Ambil Nomor WA Admin dari Settings Firestore
+    let adminWhatsapp = "081414159500";
+    try {
+      const settingsSnap = await db.collection("settings").doc("store_layout").get();
+      if (settingsSnap.exists && settingsSnap.data()?.adminWhatsapp) {
+        adminWhatsapp = settingsSnap.data()?.adminWhatsapp;
+      }
+    } catch (err) {
+      console.warn("Gagal mengambil settings admin WA:", err);
+    }
+
+    // Cek apakah produk ini adalah GESTUN
+    const isGestun =
+      orderData.productId === "GESTUN" ||
+      (orderData.productName && orderData.productName.toLowerCase().includes("gestun"));
+
+    // 3. Ambil Detail Produk
     const productDoc = await db.collection("products").doc(orderData.productId).get();
     const productData = productDoc.data();
-    
-    const productType = productData?.type || "DOWNLOAD"; 
-    const hasLicense = productData?.hasLicense !== false; 
+
+    const productType = productData?.type || "DOWNLOAD";
+    const hasLicense = !isGestun && productData?.hasLicense !== false;
     const telegramFileId = productData?.telegramFileId || "";
     const targetAppUrl = productData?.appUrl || "#";
 
-    // 3. Kelola / Buat Lisensi Jika Memang Diperlukan
+    // 4. Kelola / Buat Lisensi Jika Memang Diperlukan (Bukan Gestun)
     let licenseKey = "";
     if (hasLicense) {
       const licenseSnapshot = await db
@@ -106,7 +122,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // 4. Render Blok Tampilan Lisensi
+    // 5. Render Blok Tampilan Lisensi
     const licenseHtml = hasLicense
       ? `
         <div class="license-title">KODE LISENSI ANDA:</div>
@@ -114,10 +130,35 @@ export async function GET(request: Request) {
       `
       : "";
 
-    // 5. Render Tombol Aksi Berdasarkan Tipe Produk
+    // 6. Render Tombol Aksi Berdasarkan Tipe Produk & Status Gestun
     let actionButtonHtml = "";
 
-    if (productType === "ACCESS") {
+    if (isGestun) {
+      // Format WA Admin
+      const cleanWa = adminWhatsapp.replace(/\D/g, "");
+      const formattedWa = cleanWa.startsWith("0") ? "62" + cleanWa.slice(1) : cleanWa;
+
+      const waMessage = encodeURIComponent(
+        `Halo Admin, saya ingin konfirmasi pencairan Tarik Tunai / Gestun.\n\n` +
+          `📌 Invoice: ${invoiceNumber}\n` +
+          `👤 Nama Pemohon: ${orderData.customerName || "-"}\n` +
+          `💰 Nominal: Rp ${Number(orderData.amount || orderData.price || 0).toLocaleString("id-ID")}\n` +
+          `🏦 Rekening Tujuan: ${orderData.gestunDetails?.bankName || "-"} (${orderData.gestunDetails?.accountNumber || "-"}) a.n ${orderData.gestunDetails?.accountHolder || "-"}\n\n` +
+          `Mohon segera diproses pencairannya. Terima kasih!`
+      );
+
+      const waConfirmUrl = `https://wa.me/${formattedWa}?text=${waMessage}`;
+
+      actionButtonHtml = `
+        <a href="${waConfirmUrl}" target="_blank" rel="noopener noreferrer" class="btn-action btn-wa">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:8px;">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+          </svg>
+          Konfirmasi Tarik Tunai via WhatsApp
+        </a>
+        <p class="instruction">Klik tombol di atas untuk konfirmasi & verifikasi pencairan dana ke WhatsApp Admin.</p>
+      `;
+    } else if (productType === "ACCESS") {
       actionButtonHtml = `
         <a href="${targetAppUrl}" target="_blank" class="btn-action btn-access">Buka Aplikasi / Login</a>
         <p class="instruction">${hasLicense ? "Gunakan Kode Lisensi dan Email Anda untuk login ke dalam aplikasi." : "Silakan klik tombol di atas untuk mengakses aplikasi."}</p>
@@ -129,7 +170,7 @@ export async function GET(request: Request) {
       `;
     }
 
-    // 6. Render Halaman HTML Rapi
+    // 7. Render Halaman HTML Rapi
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="id">
@@ -187,7 +228,9 @@ export async function GET(request: Request) {
             user-select: all;
           }
           .btn-action { 
-            display: block; 
+            display: flex;
+            align-items: center;
+            justify-content: center; 
             width: 100%; 
             padding: 14px; 
             color: #fff; 
@@ -202,14 +245,16 @@ export async function GET(request: Request) {
           .btn-download:hover { background: #1d4ed8; }
           .btn-access { background: #059669; }
           .btn-access:hover { background: #047857; }
-          .instruction { font-size: 0.8rem; color: #64748b; margin-top: 12px; margin-bottom: 0; }
+          .btn-wa { background: #25D366; }
+          .btn-wa:hover { background: #1eb954; }
+          .instruction { font-size: 0.8rem; color: #64748b; margin-top: 12px; margin-bottom: 0; line-height: 1.4; }
           .footer { margin-top: 24px; font-size: 0.8rem; color: #64748b; border-top: 1px solid #334155; padding-top: 16px; }
         </style>
       </head>
       <body>
         <div class="card">
           <span class="badge">PEMBAYARAN BERHASIL</span>
-          <h1>${orderData.productName || "Digital Product"}</h1>
+          <h1>${orderData.productName || "Gestun Tarik Tunai"} - Rp ${Number(orderData.amount || orderData.price || 0).toLocaleString("id-ID")}</h1>
           <p class="sub">Terima kasih! Pembelian Anda telah dikonfirmasi.</p>
           
           ${licenseHtml}
