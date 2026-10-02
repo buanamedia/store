@@ -16,11 +16,11 @@ export default function HomePage() {
     widgetPosition: string;
     footerText: string;
   }>({
-    headerTitle: "STORE Engine",
+    headerTitle: "Buana Media Store",
     headerIcon: "🛒",
     gridColumns: 4,
     widgetPosition: "BELOW_CAROUSEL",
-    footerText: "© PT Buana Media Bersama. All rights reserved.",
+    footerText: "© Buana Media. All rights reserved.",
   });
 
   // Fetch Daftar Produk & Pengaturan Tampilan Toko
@@ -40,11 +40,11 @@ export default function HomePage() {
         const dataSet = await resSet.json();
         if (resSet.ok && dataSet.settings) {
           setSettings({
-            headerTitle: dataSet.settings.headerTitle || "STORE Engine",
+            headerTitle: dataSet.settings.headerTitle || "Buana Media Store",
             headerIcon: dataSet.settings.headerIcon || "🛒",
             gridColumns: Number(dataSet.settings.gridColumns) || 4,
             widgetPosition: dataSet.settings.widgetPosition || "BELOW_CAROUSEL",
-            footerText: dataSet.settings.footerText || "© PT Buana Media Bersama. All rights reserved.",
+            footerText: dataSet.settings.footerText || "© Buana Media. All rights reserved.",
           });
         }
       } catch (err) {
