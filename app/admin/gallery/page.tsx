@@ -52,6 +52,9 @@ export default function GalleryDrivePage() {
   const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
 
+  // Preview / Lightbox Modal State
+  const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
+
   // Upload & UI State
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -109,7 +112,7 @@ export default function GalleryDrivePage() {
     }
   };
 
-  // Convert File to Base64 untuk dikirim ke Google Apps Script (Telegram Agent)
+  // Convert File to Base64 untuk dikirim ke Google Apps Script
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -254,7 +257,7 @@ export default function GalleryDrivePage() {
     }
   };
 
-  // --- LOGIK A TENTANG CHECKLIST / MULTI SELECT ---
+  // LOGIKA TENTANG CHECKLIST / MULTI SELECT
   const toggleSelectFolder = (id: string) => {
     setSelectedFolderIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
@@ -291,12 +294,10 @@ export default function GalleryDrivePage() {
 
     try {
       setLoading(true);
-      // Hapus semua folder terpilih
       const deleteFolderPromises = selectedFolderIds.map((id) =>
         fetch(`/api/gallery?id=${id}&type=folder`, { method: "DELETE" })
       );
 
-      // Hapus semua file terpilih
       const deleteFilePromises = selectedFileIds.map((id) =>
         fetch(`/api/gallery?id=${id}&type=file`, { method: "DELETE" })
       );
@@ -351,6 +352,31 @@ export default function GalleryDrivePage() {
         .btn-action { background: #334155; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
         .btn-action:hover { background: #475569; }
         .checkbox-custom { width: 18px; height: 18px; cursor: pointer; accent-color: #0284c7; }
+        
+        /* Modal Lightbox Styling */
+        .modal-overlay {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(15, 23, 42, 0.85);
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          padding: 20px;
+        }
+        .modal-content {
+          background: #1e293b;
+          border: 1px solid #334155;
+          border-radius: 16px;
+          max-width: 900px;
+          width: 100%;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
       `}</style>
 
       {!isAuthenticated ? (
@@ -556,23 +582,34 @@ export default function GalleryDrivePage() {
                               />
                             </div>
 
-                            {/* Preview Gambar (Jika Tipe File Image) */}
-                            {file.type.startsWith("image/") && (
-                              <div style={{ width: "100%", height: "120px", borderRadius: "8px", overflow: "hidden", marginBottom: "12px", background: "#0f172a", border: "1px solid #334155" }}>
-                                <img src={file.publicUrl} alt={file.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                              </div>
-                            )}
+                            {/* Klik pada konten file memicu modal preview */}
+                            <div onClick={() => setPreviewFile(file)} style={{ cursor: "pointer" }}>
+                              {/* Preview Gambar */}
+                              {file.type.startsWith("image/") ? (
+                                <div style={{ width: "100%", height: "130px", borderRadius: "8px", overflow: "hidden", marginBottom: "12px", background: "#0f172a", border: "1px solid #334155" }}>
+                                  <img src={file.publicUrl} alt={file.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                </div>
+                              ) : file.type.startsWith("video/") ? (
+                                <div style={{ width: "100%", height: "130px", borderRadius: "8px", overflow: "hidden", marginBottom: "12px", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                                  <span style={{ fontSize: "2.5rem", zIndex: 1 }}>▶️</span>
+                                </div>
+                              ) : (
+                                <div style={{ width: "100%", height: "90px", borderRadius: "8px", marginBottom: "12px", background: "#0f172a", border: "1px solid #334155", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.5rem" }}>
+                                  {getFileIcon(file.type)}
+                                </div>
+                              )}
 
-                            <div style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#f8fafc", wordBreak: "break-all", marginBottom: "4px" }}>
-                              {file.name}
-                            </div>
-                            <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "12px" }}>
-                              {formatBytes(file.size)}
+                              <div style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#f8fafc", wordBreak: "break-all", marginBottom: "4px" }}>
+                                {file.name}
+                              </div>
+                              <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "12px" }}>
+                                {formatBytes(file.size)}
+                              </div>
                             </div>
                           </div>
 
                           {/* Tombol Aksi File */}
-                          <div style={{ borderTop: "1px solid #334155", paddingTop: "10px", display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "space-between" }}>
+                          <div style={{ borderTop: "1px solid #334155", paddingTop: "10px", display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center" }}>
                             <button
                               onClick={() => handleCopyLink(file)}
                               style={{
@@ -590,6 +627,7 @@ export default function GalleryDrivePage() {
                             </button>
                             
                             <div style={{ display: "flex", gap: "4px" }}>
+                              <button onClick={() => setPreviewFile(file)} className="btn-action" title="Preview / Lihat File">👁️</button>
                               <button onClick={() => handleRename("file", file.id, file.name)} className="btn-action" title="Rename">✏️</button>
                               <button onClick={() => handleDelete("file", file.id, file.name)} className="btn-action" style={{ color: "#ef4444" }} title="Delete">🗑</button>
                             </div>
@@ -602,6 +640,80 @@ export default function GalleryDrivePage() {
               </div>
             </>
           )}
+
+          {/* MODAL LIGHTBOX / MEDIA VIEWER */}
+          {previewFile && (
+            <div className="modal-overlay" onClick={() => setPreviewFile(null)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #334155", background: "#0f172a" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
+                    <span style={{ fontSize: "1.2rem" }}>{getFileIcon(previewFile.type)}</span>
+                    <h3 style={{ margin: 0, fontSize: "1rem", color: "#f8fafc", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {previewFile.name}
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setPreviewFile(null)}
+                    style={{ background: "#334155", border: "none", color: "#f8fafc", padding: "6px 12px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}
+                  >
+                    ✕ Tutup
+                  </button>
+                </div>
+
+                <div style={{ padding: "20px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "auto", minHeight: "300px", background: "#090d16" }}>
+                  {previewFile.type.startsWith("image/") ? (
+                    <img
+                      src={previewFile.publicUrl}
+                      alt={previewFile.name}
+                      style={{ maxWidth: "100%", maxHeight: "65vh", objectFit: "contain", borderRadius: "8px" }}
+                    />
+                  ) : previewFile.type.startsWith("video/") ? (
+                    <video
+                      controls
+                      autoPlay
+                      src={previewFile.publicUrl}
+                      style={{ maxWidth: "100%", maxHeight: "65vh", borderRadius: "8px" }}
+                    />
+                  ) : previewFile.type.startsWith("audio/") ? (
+                    <audio controls autoPlay src={previewFile.publicUrl} style={{ width: "100%", maxWidth: "500px" }} />
+                  ) : previewFile.type.includes("pdf") ? (
+                    <iframe
+                      src={previewFile.publicUrl}
+                      title={previewFile.name}
+                      style={{ width: "100%", height: "65vh", border: "none", borderRadius: "8px" }}
+                    />
+                  ) : (
+                    <div style={{ textAlign: "center", color: "#94a3b8" }}>
+                      <div style={{ fontSize: "4rem", marginBottom: "16px" }}>{getFileIcon(previewFile.type)}</div>
+                      <p style={{ marginBottom: "16px" }}>Pratinjau langsung tidak tersedia untuk format berkas ini.</p>
+                      <a
+                        href={previewFile.publicUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ background: "#0284c7", color: "#fff", padding: "10px 20px", borderRadius: "8px", textDecoration: "none", fontWeight: "bold", display: "inline-block" }}
+                      >
+                        ⬇️ Buka / Unduh Berkas
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderTop: "1px solid #334155", background: "#0f172a", fontSize: "0.85rem", color: "#94a3b8" }}>
+                  <span>Ukuran: {formatBytes(previewFile.size)}</span>
+                  <a
+                    href={previewFile.publicUrl}
+                    download={previewFile.name}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ background: "#0284c7", color: "#fff", padding: "6px 14px", borderRadius: "6px", textDecoration: "none", fontWeight: "bold" }}
+                  >
+                    ⬇️ Unduh File
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>
