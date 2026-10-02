@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 const GAS_WEBAPP_URL =
   "https://script.google.com/macros/s/AKfycbwifb1OzsmJ6BeexYfLPV1av2LogDJ36Hc6CJCpmYfkhfFv6xKc-1mAin3nlI6WR8w/exec";
 
@@ -25,6 +27,11 @@ interface FileItem {
 }
 
 export default function GalleryDrivePage() {
+  // Autentikasi Admin State
+  const [adminPassword, setAdminPassword] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Galeri Data State
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,17 +45,46 @@ export default function GalleryDrivePage() {
     { id: "root", name: "Drive Saya" },
   ]);
 
-  // Search
+  // Search Query
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Upload & Form state
+  // Upload & UI State
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Cek Sesi Login Admin saat Halaman Dimuat
   useEffect(() => {
-    loadGalleryData(currentFolder.id, searchQuery);
-  }, [currentFolder, searchQuery]);
+    const savedPwd = sessionStorage.getItem("admin_session_pwd");
+    if (savedPwd) {
+      setAdminPassword(savedPwd);
+      setIsAuthenticated(true);
+      loadGalleryData(currentFolder.id, searchQuery);
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadGalleryData(currentFolder.id, searchQuery);
+    }
+  }, [currentFolder, searchQuery, isAuthenticated]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminPassword.trim().length > 0) {
+      sessionStorage.setItem("admin_session_pwd", adminPassword);
+      setIsAuthenticated(true);
+      loadGalleryData(currentFolder.id, searchQuery);
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("admin_session_pwd");
+    setIsAuthenticated(false);
+    setAdminPassword("");
+  };
 
   const loadGalleryData = async (parentId: string, search: string) => {
     setLoading(true);
@@ -248,168 +284,202 @@ export default function GalleryDrivePage() {
         .btn-action:hover { background: #475569; }
       `}</style>
 
-      <div style={{ maxWidth: "1150px", margin: "0 auto" }}>
-        
-        {/* HEADER & ACTION BAR */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
-          <div>
-            <h1 style={{ fontSize: "1.4rem", color: "#38bdf8", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-              📁 Cloud Storage Gallery
-            </h1>
-            <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Terhubung dengan Telegram Storage Cluster</span>
-          </div>
-
-          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+      {!isAuthenticated ? (
+        /* LAYAR LOGIN ADMIN */
+        <div style={{ maxWidth: "400px", width: "100%", margin: "60px auto 0 auto", background: "#1e293b", padding: "24px", borderRadius: "16px", border: "1px solid #334155", textAlign: "center" }}>
+          <h2 style={{ color: "#38bdf8", marginTop: 0 }}>Gallery Drive Admin Login</h2>
+          <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginBottom: "24px" }}>
+            Masukkan Password Admin untuk mengakses Cloud Storage Galeri.
+          </p>
+          <form onSubmit={handleLogin}>
+            <input
+              type="password"
+              required
+              placeholder="Password Admin"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box", marginBottom: "16px", fontSize: "1rem" }}
+            />
             <button
-              onClick={handleCreateFolder}
-              style={{ background: "#334155", color: "#38bdf8", border: "1px solid #0284c7", padding: "10px 16px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", fontSize: "0.85rem" }}
+              type="submit"
+              style={{ width: "100%", padding: "12px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "1rem", cursor: "pointer" }}
             >
-              ➕ Folder Baru
+              Masuk Galeri
             </button>
-
-            <label style={{ background: "#0284c7", color: "#fff", padding: "10px 18px", borderRadius: "8px", fontWeight: "bold", cursor: isUploading ? "not-allowed" : "pointer", fontSize: "0.85rem", display: "inline-block" }}>
-              {isUploading ? "Mengunggah..." : "📤 Upload File"}
-              <input
-                type="file"
-                multiple
-                disabled={isUploading}
-                onChange={handleFileUpload}
-                style={{ display: "none" }}
-              />
-            </label>
-
-            <Link href="/admin/products" style={{ background: "#475569", color: "#fff", padding: "10px 16px", borderRadius: "8px", textDecoration: "none", fontSize: "0.85rem", fontWeight: "bold" }}>
-              ← Admin Dashboard
-            </Link>
-          </div>
+          </form>
         </div>
-
-        {/* STATUS UPLOAD BAR */}
-        {isUploading && (
-          <div style={{ background: "rgba(2, 132, 199, 0.2)", border: "1px solid #0284c7", padding: "12px 16px", borderRadius: "10px", color: "#38bdf8", marginBottom: "20px", fontSize: "0.85rem", fontWeight: "bold" }}>
-            ⏳ {uploadStatus}
-          </div>
-        )}
-
-        {/* SEARCH & NAVIGASI BREADCRUMB */}
-        <div style={{ background: "#1e293b", padding: "16px", borderRadius: "12px", border: "1px solid #334155", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+      ) : (
+        /* TAMPILAN DASHBOARD GALERI ADMIN */
+        <div style={{ maxWidth: "1150px", margin: "0 auto" }}>
           
-          {/* Breadcrumb Folder Path */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.9rem", color: "#cbd5e1", flexWrap: "wrap" }}>
-            {folderHistory.map((folder, idx) => (
-              <React.Fragment key={folder.id}>
-                <span
-                  onClick={() => handleBreadcrumbClick(idx)}
-                  style={{ cursor: "pointer", color: idx === folderHistory.length - 1 ? "#38bdf8" : "#94a3b8", fontWeight: idx === folderHistory.length - 1 ? "bold" : "normal" }}
-                >
-                  {folder.name}
-                </span>
-                {idx < folderHistory.length - 1 && <span style={{ color: "#64748b" }}>/</span>}
-              </React.Fragment>
-            ))}
+          {/* HEADER & ACTION BAR */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
+            <div>
+              <h1 style={{ fontSize: "1.4rem", color: "#38bdf8", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                📁 Cloud Storage Gallery
+              </h1>
+              <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Terhubung dengan Telegram Storage Cluster</span>
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              <button
+                onClick={handleCreateFolder}
+                style={{ background: "#334155", color: "#38bdf8", border: "1px solid #0284c7", padding: "10px 16px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", fontSize: "0.85rem" }}
+              >
+                ➕ Folder Baru
+              </button>
+
+              <label style={{ background: "#0284c7", color: "#fff", padding: "10px 18px", borderRadius: "8px", fontWeight: "bold", cursor: isUploading ? "not-allowed" : "pointer", fontSize: "0.85rem", display: "inline-block" }}>
+                {isUploading ? "Mengunggah..." : "📤 Upload File"}
+                <input
+                  type="file"
+                  multiple
+                  disabled={isUploading}
+                  onChange={handleFileUpload}
+                  style={{ display: "none" }}
+                />
+              </label>
+
+              <Link href="/admin/page" style={{ background: "#475569", color: "#fff", padding: "10px 16px", borderRadius: "8px", textDecoration: "none", fontSize: "0.85rem", fontWeight: "bold" }}>
+                ← Dashboard Utama
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                style={{ background: "#ef4444", border: "none", color: "#fff", padding: "10px 16px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "0.85rem" }}
+              >
+                Logout
+              </button>
+            </div>
           </div>
 
-          {/* Search Box */}
-          <input
-            type="text"
-            placeholder="🔍 Cari berkas atau folder..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", fontSize: "0.85rem", outline: "none", minWidth: "220px" }}
-          />
-        </div>
+          {/* STATUS UPLOAD BAR */}
+          {isUploading && (
+            <div style={{ background: "rgba(2, 132, 199, 0.2)", border: "1px solid #0284c7", padding: "12px 16px", borderRadius: "10px", color: "#38bdf8", marginBottom: "20px", fontSize: "0.85rem", fontWeight: "bold" }}>
+              ⏳ {uploadStatus}
+            </div>
+          )}
 
-        {loading ? (
-          <p style={{ color: "#94a3b8", textAlign: "center", padding: "40px 0" }}>Memuat penyimpanan cloud...</p>
-        ) : (
-          <>
-            {/* SEKSI FOLDER */}
-            {folders.length > 0 && (
-              <div style={{ marginBottom: "32px" }}>
-                <h2 style={{ fontSize: "1rem", color: "#94a3b8", marginBottom: "12px" }}>FOLDER ({folders.length})</h2>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "16px" }}>
-                  {folders.map((folder) => (
-                    <div key={folder.id} className="drive-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div
-                        onClick={() => handleOpenFolder(folder)}
-                        style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", flex: 1, overflow: "hidden" }}
-                      >
-                        <span style={{ fontSize: "1.5rem" }}>📁</span>
-                        <span style={{ fontWeight: "bold", fontSize: "0.9rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#f8fafc" }}>
-                          {folder.name}
-                        </span>
-                      </div>
+          {/* SEARCH & NAVIGASI BREADCRUMB */}
+          <div style={{ background: "#1e293b", padding: "16px", borderRadius: "12px", border: "1px solid #334155", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+            
+            {/* Breadcrumb Folder Path */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.9rem", color: "#cbd5e1", flexWrap: "wrap" }}>
+              {folderHistory.map((folder, idx) => (
+                <React.Fragment key={folder.id}>
+                  <span
+                    onClick={() => handleBreadcrumbClick(idx)}
+                    style={{ cursor: "pointer", color: idx === folderHistory.length - 1 ? "#38bdf8" : "#94a3b8", fontWeight: idx === folderHistory.length - 1 ? "bold" : "normal" }}
+                  >
+                    {folder.name}
+                  </span>
+                  {idx < folderHistory.length - 1 && <span style={{ color: "#64748b" }}>/</span>}
+                </React.Fragment>
+              ))}
+            </div>
 
-                      <div style={{ display: "flex", gap: "4px" }}>
-                        <button onClick={() => handleRename("folder", folder.id, folder.name)} className="btn-action" title="Rename">✏️</button>
-                        <button onClick={() => handleDelete("folder", folder.id, folder.name)} className="btn-action" style={{ color: "#ef4444" }} title="Delete">🗑</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Search Box */}
+            <input
+              type="text"
+              placeholder="🔍 Cari berkas atau folder..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", fontSize: "0.85rem", outline: "none", minWidth: "220px" }}
+            />
+          </div>
 
-            {/* SEKSI FILE */}
-            <div>
-              <h2 style={{ fontSize: "1rem", color: "#94a3b8", marginBottom: "12px" }}>FILE ({files.length})</h2>
-              {files.length === 0 && folders.length === 0 ? (
-                <div style={{ background: "#1e293b", padding: "40px", borderRadius: "12px", textAlign: "center", color: "#94a3b8", border: "1px solid #334155" }}>
-                  Folder ini masih kosong. Klik <strong>Upload File</strong> atau buat <strong>Folder Baru</strong>.
-                </div>
-              ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "16px" }}>
-                  {files.map((file) => (
-                    <div key={file.id} className="drive-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                      <div>
-                        {/* Preview Gambar (Jika Tipe File Image) */}
-                        {file.type.startsWith("image/") ? (
-                          <div style={{ width: "100%", height: "120px", borderRadius: "8px", overflow: "hidden", marginBottom: "12px", background: "#0f172a", border: "1px solid #334155" }}>
-                            <img src={file.publicUrl} alt={file.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          </div>
-                        ) : (
-                          <div style={{ fontSize: "2rem", marginBottom: "8px" }}>{getFileIcon(file.type)}</div>
-                        )}
-
-                        <div style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#f8fafc", wordBreak: "break-all", marginBottom: "4px" }}>
-                          {file.name}
-                        </div>
-                        <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "12px" }}>
-                          {formatBytes(file.size)}
-                        </div>
-                      </div>
-
-                      {/* Tombol Aksi File */}
-                      <div style={{ borderTop: "1px solid #334155", paddingTop: "10px", display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "space-between" }}>
-                        <button
-                          onClick={() => handleCopyLink(file)}
-                          style={{
-                            background: copiedId === file.id ? "#10b981" : "#0284c7",
-                            color: "#fff",
-                            border: "none",
-                            padding: "6px 10px",
-                            borderRadius: "6px",
-                            fontSize: "0.75rem",
-                            fontWeight: "bold",
-                            cursor: "pointer"
-                          }}
+          {loading ? (
+            <p style={{ color: "#94a3b8", textAlign: "center", padding: "40px 0" }}>Memuat penyimpanan cloud...</p>
+          ) : (
+            <>
+              {/* SEKSI FOLDER */}
+              {folders.length > 0 && (
+                <div style={{ marginBottom: "32px" }}>
+                  <h2 style={{ fontSize: "1rem", color: "#94a3b8", marginBottom: "12px" }}>FOLDER ({folders.length})</h2>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "16px" }}>
+                    {folders.map((folder) => (
+                      <div key={folder.id} className="drive-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div
+                          onClick={() => handleOpenFolder(folder)}
+                          style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", flex: 1, overflow: "hidden" }}
                         >
-                          {copiedId === file.id ? "✓ Link Copied!" : "🔗 Copy Link"}
-                        </button>
-                        
+                          <span style={{ fontSize: "1.5rem" }}>📁</span>
+                          <span style={{ fontWeight: "bold", fontSize: "0.9rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#f8fafc" }}>
+                            {folder.name}
+                          </span>
+                        </div>
+
                         <div style={{ display: "flex", gap: "4px" }}>
-                          <button onClick={() => handleRename("file", file.id, file.name)} className="btn-action" title="Rename">✏️</button>
-                          <button onClick={() => handleDelete("file", file.id, file.name)} className="btn-action" style={{ color: "#ef4444" }} title="Delete">🗑</button>
+                          <button onClick={() => handleRename("folder", folder.id, folder.name)} className="btn-action" title="Rename">✏️</button>
+                          <button onClick={() => handleDelete("folder", folder.id, folder.name)} className="btn-action" style={{ color: "#ef4444" }} title="Delete">🗑</button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
-          </>
-        )}
-      </div>
+
+              {/* SEKSI FILE */}
+              <div>
+                <h2 style={{ fontSize: "1rem", color: "#94a3b8", marginBottom: "12px" }}>FILE ({files.length})</h2>
+                {files.length === 0 && folders.length === 0 ? (
+                  <div style={{ background: "#1e293b", padding: "40px", borderRadius: "12px", textAlign: "center", color: "#94a3b8", border: "1px solid #334155" }}>
+                    Folder ini masih kosong. Klik <strong>Upload File</strong> atau buat <strong>Folder Baru</strong>.
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "16px" }}>
+                    {files.map((file) => (
+                      <div key={file.id} className="drive-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                        <div>
+                          {/* Preview Gambar (Jika Tipe File Image) */}
+                          {file.type.startsWith("image/") ? (
+                            <div style={{ width: "100%", height: "120px", borderRadius: "8px", overflow: "hidden", marginBottom: "12px", background: "#0f172a", border: "1px solid #334155" }}>
+                              <img src={file.publicUrl} alt={file.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: "2rem", marginBottom: "8px" }}>{getFileIcon(file.type)}</div>
+                          )}
+
+                          <div style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#f8fafc", wordBreak: "break-all", marginBottom: "4px" }}>
+                            {file.name}
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "12px" }}>
+                            {formatBytes(file.size)}
+                          </div>
+                        </div>
+
+                        {/* Tombol Aksi File */}
+                        <div style={{ borderTop: "1px solid #334155", paddingTop: "10px", display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "space-between" }}>
+                          <button
+                            onClick={() => handleCopyLink(file)}
+                            style={{
+                              background: copiedId === file.id ? "#10b981" : "#0284c7",
+                              color: "#fff",
+                              border: "none",
+                              padding: "6px 10px",
+                              borderRadius: "6px",
+                              fontSize: "0.75rem",
+                              fontWeight: "bold",
+                              cursor: "pointer"
+                            }}
+                          >
+                            {copiedId === file.id ? "✓ Link Copied!" : "🔗 Copy Link"}
+                          </button>
+                          
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            <button onClick={() => handleRename("file", file.id, file.name)} className="btn-action" title="Rename">✏️</button>
+                            <button onClick={() => handleDelete("file", file.id, file.name)} className="btn-action" style={{ color: "#ef4444" }} title="Delete">🗑</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
