@@ -21,7 +21,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { productId, customerEmail, customerName } = body;
+    const { productId, customerEmail, customerName, customerPhone, amount, gestunDetails } = body;
 
     if (!productId || !customerEmail || !customerName) {
       return NextResponse.json(
@@ -40,8 +40,8 @@ export async function POST(request: Request) {
     }
     const productData = productDoc.data();
 
-    // 2. Cek Stok Lisensi Manual
-    if (productData?.hasLicense !== false && productData?.licenseMode === "MANUAL") {
+    // 2. Cek Stok Lisensi Manual (Diabaikan jika produk adalah GESTUN atau hasLicense = false)
+    if (productId !== "GESTUN" && productData?.hasLicense !== false && productData?.licenseMode === "MANUAL") {
       let keys: string[] = [];
       if (Array.isArray(productData.manualKeys)) {
         keys = productData.manualKeys;
@@ -60,29 +60,43 @@ export async function POST(request: Request) {
       }
     }
 
+    // Tentukan nominal dan nama produk (Dinamis jika GESTUN)
+    const isGestun = productId === "GESTUN";
+    const finalAmount = isGestun && amount ? Number(amount) : Number(productData?.price || 0);
+    const productName = isGestun
+      ? `Gestun Tarik Tunai - Rp ${finalAmount.toLocaleString("id-ID")}`
+      : (productData?.name || "Digital Product");
+
     const invoiceNumber = `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    // 3. Simpan order ke Firestore
-    await db.collection("orders").doc(invoiceNumber).set({
+    // 3. Simpan order ke Firestore koleksi 'orders'
+    const orderData: any = {
       invoiceNumber,
       productId,
-      productName: productData?.name || "Digital Product",
-      amount: productData?.price || 0,
+      productName,
+      amount: finalAmount,
       customerEmail,
       customerName,
+      customerPhone: customerPhone || "",
       status: "PENDING",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    if (isGestun && gestunDetails) {
+      orderData.gestunDetails = gestunDetails;
+    }
+
+    await db.collection("orders").doc(invoiceNumber).set(orderData);
 
     // 4. Buat URL Pembayaran DOKU
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://store-indol-seven.vercel.app";
     const dokuResponse = await createDokuCheckoutUrl({
       invoiceNumber,
-      amount: Number(productData?.price || 0),
+      amount: finalAmount,
       customerEmail,
       customerName,
-      productName: productData?.name || "Digital Product",
+      productName,
       callbackUrl: `${appUrl}/api/access?invoice=${invoiceNumber}`,
     });
 
