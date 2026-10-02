@@ -8,6 +8,10 @@ export default function HomePage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // State untuk Pencarian Invoice & Modal
+  const [searchInvoice, setSearchInvoice] = useState("");
+  const [showSearchModal, setShowSearchModal] = useState(false);
+
   // State untuk kontrol pop-up WA Chat
   const [showWaPopup, setShowWaPopup] = useState(false);
 
@@ -63,39 +67,39 @@ export default function HomePage() {
     fetchData();
   }, []);
 
+  // Fungsi Eksekusi Pencarian Invoice
+  const handleSearchInvoice = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanInv = searchInvoice.trim();
+    if (!cleanInv) {
+      alert("Masukkan nomor invoice terlebih dahulu!");
+      return;
+    }
+    // Direct menuju endpoint akses transaksi
+    window.location.href = `/api/access?invoice=${encodeURIComponent(cleanInv)}`;
+  };
+
   // Format link WhatsApp melayang
   const cleanWaNumber = settings.adminWhatsapp.replace(/\D/g, "");
   const formattedWaNumber = cleanWaNumber.startsWith("0") ? "62" + cleanWaNumber.slice(1) : cleanWaNumber;
   const waFloatingUrl = `https://wa.me/${formattedWaNumber}?text=${encodeURIComponent(`Halo Admin ${settings.headerTitle}, saya ingin bertanya...`)}`;
 
-  // Susun Slide Carousel: Gabungan Gestun + Produk Digital yang Dicentang "showInCarousel !== false"
+  // Susun Slide Carousel: Produk Digital yang Dicentang "showInCarousel !== false"
   const carouselProducts = products.filter((p) => p.showInCarousel !== false);
 
-  const slides = [
-    {
-      id: "slide-gestun",
-      title: "⚡ Layanan Gestun & Tarik Tunai Instant",
-      subtitle: "Pencairan dana cepat, biaya transparan 7%, dan diproses otomatis 24/7.",
-      badge: "LAYANAN UTAMA",
-      ctaText: "Tarik Tunai Sekarang",
-      ctaLink: "/gestun",
-      imageUrl: "",
-      bgGradient: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)",
-    },
-    ...carouselProducts.map((p, idx) => ({
-      id: p.id,
-      title: `🚀 ${p.name}`,
-      subtitle: p.description || "Dapatkan akses lisensi resmi instant untuk otomatisasi workflow Anda.",
-      badge: `PRODUK DIGITAL ${idx + 1}`,
-      ctaText: `Beli ${p.name} - Rp ${Number(p.price || 0).toLocaleString("id-ID")}`,
-      ctaLink: `/checkout/${p.id}`,
-      imageUrl: p.imageUrl || p.image || p.bannerUrl || "",
-      bgGradient:
-        idx % 2 === 0
-          ? "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
-          : "linear-gradient(135deg, #111827 0%, #374151 100%)",
-    })),
-  ];
+  const slides = carouselProducts.map((p, idx) => ({
+    id: p.id,
+    title: `🚀 ${p.name}`,
+    subtitle: p.description || "Dapatkan akses lisensi resmi instant untuk otomatisasi workflow Anda.",
+    badge: `PRODUK DIGITAL ${idx + 1}`,
+    ctaText: `Beli ${p.name} - Rp ${Number(p.price || 0).toLocaleString("id-ID")}`,
+    ctaLink: `/checkout/${p.id}`,
+    imageUrl: p.imageUrl || p.image || p.bannerUrl || "",
+    bgGradient:
+      idx % 2 === 0
+        ? "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
+        : "linear-gradient(135deg, #111827 0%, #374151 100%)",
+  }));
 
   // Auto Play Banner Carousel
   useEffect(() => {
@@ -106,8 +110,8 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, [slides.length]);
 
-  // Elemen Widget Promosi Gestun
-  const GestunWidget = (
+  // Widget Pencarian Transaksi Berdasarkan Nomor Invoice
+  const InvoiceSearchWidget = (
     <section style={{ marginBottom: "40px" }}>
       <div
         style={{
@@ -124,29 +128,48 @@ export default function HomePage() {
       >
         <div style={{ flex: "1 1 300px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-            <span style={{ fontSize: "1.5rem" }}>⚡</span>
-            <h3 style={{ fontSize: "1.2rem", color: "#38bdf8", margin: 0 }}>Fitur Gestun & Tarik Tunai Instant</h3>
+            <span style={{ fontSize: "1.5rem" }}>🔍</span>
+            <h3 style={{ fontSize: "1.2rem", color: "#38bdf8", margin: 0 }}>Cek Status Transaksi & Lisensi</h3>
           </div>
           <p style={{ fontSize: "0.85rem", color: "#94a3b8", margin: 0, lineHeight: "1.6" }}>
-            Butuh dana tunai cepat dari QRIS atau Kartu Kredit? Gunakan layanan pencairan otomatis kami dengan potongan transparan dan verifikasi cepat.
+            Masukkan nomor invoice pembelian Anda di bawah ini untuk mengunduh produk atau mengecek status lisensi.
           </p>
         </div>
 
-        <Link
-          href="/gestun"
-          style={{
-            padding: "12px 24px",
-            background: "#2563eb",
-            color: "#ffffff",
-            borderRadius: "10px",
-            fontWeight: "bold",
-            fontSize: "0.9rem",
-            textDecoration: "none",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Mulai Tarik Tunai
-        </Link>
+        <form onSubmit={handleSearchInvoice} style={{ display: "flex", gap: "10px", flex: "1 1 320px" }}>
+          <input
+            type="text"
+            placeholder="Contoh: INV-1790928352936"
+            value={searchInvoice}
+            onChange={(e) => setSearchInvoice(e.target.value)}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              borderRadius: "8px",
+              border: "1px solid #475569",
+              background: "#0f172a",
+              color: "#fff",
+              fontSize: "0.9rem",
+              boxSizing: "border-box",
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              padding: "12px 20px",
+              background: "#0284c7",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "8px",
+              fontWeight: "bold",
+              fontSize: "0.9rem",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Cari TRX
+          </button>
+        </form>
       </div>
     </section>
   );
@@ -169,121 +192,215 @@ export default function HomePage() {
           </Link>
 
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <Link
-              href="/gestun"
+            <button
+              onClick={() => setShowSearchModal(true)}
               style={{
                 padding: "8px 16px",
                 background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
                 color: "#fff",
+                border: "none",
                 borderRadius: "8px",
                 fontWeight: "bold",
                 fontSize: "0.85rem",
-                textDecoration: "none",
+                cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
                 boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)"
               }}
             >
-              ⚡ Layanan Gestun
-            </Link>
+              🔍 Cek Status TRX
+            </button>
           </div>
         </div>
       </header>
 
+      {/* MODAL SEARCH INVOICE (NATIVE POPUP) */}
+      {showSearchModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+            padding: "16px",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#1e293b",
+              border: "1px solid #334155",
+              borderRadius: "16px",
+              padding: "24px",
+              maxWidth: "420px",
+              width: "100%",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.5)",
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={() => setShowSearchModal(false)}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                background: "none",
+                border: "none",
+                color: "#94a3b8",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+            <h3 style={{ margin: "0 0 8px 0", color: "#38bdf8", fontSize: "1.2rem" }}>
+              🔍 Cek Transaksi Invoice
+            </h3>
+            <p style={{ margin: "0 0 16px 0", color: "#94a3b8", fontSize: "0.85rem", lineHeight: "1.4" }}>
+              Masukkan nomor invoice lengkap yang Anda terima setelah melakukan pembayaran.
+            </p>
+            <form onSubmit={handleSearchInvoice}>
+              <input
+                type="text"
+                required
+                placeholder="INV-xxxxxxxxxxxx"
+                value={searchInvoice}
+                onChange={(e) => setSearchInvoice(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid #475569",
+                  background: "#0f172a",
+                  color: "#fff",
+                  fontSize: "0.95rem",
+                  boxSizing: "border-box",
+                  marginBottom: "16px",
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  background: "#2563eb",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontWeight: "bold",
+                  fontSize: "0.95rem",
+                  cursor: "pointer",
+                }}
+              >
+                Cari Transaksi
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MAIN CONTAINER */}
       <main style={{ maxWidth: "1100px", margin: "0 auto", padding: "24px 16px 60px" }}>
         
-        {/* WIDGET GESTUN (JIKA DIATUR DI ATAS CAROUSEL) */}
-        {settings.widgetPosition === "ABOVE_CAROUSEL" && GestunWidget}
+        {/* WIDGET CHECK INVOICE (JIKA DIATUR DI ATAS CAROUSEL) */}
+        {settings.widgetPosition === "ABOVE_CAROUSEL" && InvoiceSearchWidget}
 
         {/* CAROUSEL BANNER HERO RESPONSIVE WITH IMAGE */}
-        <section style={{ position: "relative", borderRadius: "20px", overflow: "hidden", marginBottom: "36px", boxShadow: "0 10px 25px rgba(0,0,0,0.4)", border: "1px solid #334155" }}>
-          <div
-            style={{
-              display: "flex",
-              transition: "transform 0.5s ease-in-out",
-              transform: `translateX(-${currentSlide * 100}%)`,
-            }}
-          >
-            {slides.map((slide) => (
-              <div
-                key={slide.id}
-                style={{
-                  minWidth: "100%",
-                  background: slide.bgGradient,
-                  padding: "40px 32px",
-                  boxSizing: "border-box",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "28px",
-                  minHeight: "260px",
-                }}
-              >
-                {slide.imageUrl && (
-                  <div style={{ flexShrink: 0, width: "180px", height: "180px", borderRadius: "16px", overflow: "hidden", border: "2px solid rgba(255,255,255,0.15)", boxShadow: "0 8px 20px rgba(0,0,0,0.3)" }}>
-                    <img
-                      src={slide.imageUrl}
-                      alt={slide.title}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  </div>
-                )}
-
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                  <span style={{ background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", border: "1px solid #38bdf8", padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", marginBottom: "12px" }}>
-                    {slide.badge}
-                  </span>
-                  <h2 style={{ fontSize: "1.7rem", color: "#ffffff", margin: "0 0 10px 0", fontWeight: "800" }}>
-                    {slide.title}
-                  </h2>
-                  <p style={{ fontSize: "0.92rem", color: "#cbd5e1", margin: "0 0 20px 0", maxWidth: "650px", lineHeight: "1.5" }}>
-                    {slide.subtitle}
-                  </p>
-                  <Link
-                    href={slide.ctaLink}
-                    style={{
-                      padding: "12px 24px",
-                      background: "#0284c7",
-                      color: "#ffffff",
-                      borderRadius: "10px",
-                      fontWeight: "bold",
-                      fontSize: "0.9rem",
-                      textDecoration: "none",
-                      boxShadow: "0 4px 14px rgba(2, 132, 199, 0.4)",
-                    }}
-                  >
-                    {slide.ctaText} →
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {slides.length > 1 && (
-            <div style={{ position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "8px" }}>
-              {slides.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentSlide(idx)}
+        {slides.length > 0 && (
+          <section style={{ position: "relative", borderRadius: "20px", overflow: "hidden", marginBottom: "36px", boxShadow: "0 10px 25px rgba(0,0,0,0.4)", border: "1px solid #334155" }}>
+            <div
+              style={{
+                display: "flex",
+                transition: "transform 0.5s ease-in-out",
+                transform: `translateX(-${currentSlide * 100}%)`,
+              }}
+            >
+              {slides.map((slide) => (
+                <div
+                  key={slide.id}
                   style={{
-                    width: currentSlide === idx ? "24px" : "8px",
-                    height: "8px",
-                    borderRadius: "4px",
-                    background: currentSlide === idx ? "#38bdf8" : "#64748b",
-                    border: "none",
-                    cursor: "pointer",
-                    transition: "all 0.3s ease",
+                    minWidth: "100%",
+                    background: slide.bgGradient,
+                    padding: "40px 32px",
+                    boxSizing: "border-box",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "28px",
+                    minHeight: "260px",
                   }}
-                />
+                >
+                  {slide.imageUrl && (
+                    <div style={{ flexShrink: 0, width: "180px", height: "180px", borderRadius: "16px", overflow: "hidden", border: "2px solid rgba(255,255,255,0.15)", boxShadow: "0 8px 20px rgba(0,0,0,0.3)" }}>
+                      <img
+                        src={slide.imageUrl}
+                        alt={slide.title}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    </div>
+                  )}
+
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                    <span style={{ background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", border: "1px solid #38bdf8", padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", marginBottom: "12px" }}>
+                      {slide.badge}
+                    </span>
+                    <h2 style={{ fontSize: "1.7rem", color: "#ffffff", margin: "0 0 10px 0", fontWeight: "800" }}>
+                      {slide.title}
+                    </h2>
+                    <p style={{ fontSize: "0.92rem", color: "#cbd5e1", margin: "0 0 20px 0", maxWidth: "650px", lineHeight: "1.5" }}>
+                      {slide.subtitle}
+                    </p>
+                    <Link
+                      href={slide.ctaLink}
+                      style={{
+                        padding: "12px 24px",
+                        background: "#0284c7",
+                        color: "#ffffff",
+                        borderRadius: "10px",
+                        fontWeight: "bold",
+                        fontSize: "0.9rem",
+                        textDecoration: "none",
+                        boxShadow: "0 4px 14px rgba(2, 132, 199, 0.4)",
+                      }}
+                    >
+                      {slide.ctaText} →
+                    </Link>
+                  </div>
+                </div>
               ))}
             </div>
-          )}
-        </section>
 
-        {/* WIDGET GESTUN (JIKA DIATUR DI BAWAH CAROUSEL) */}
-        {settings.widgetPosition === "BELOW_CAROUSEL" && GestunWidget}
+            {slides.length > 1 && (
+              <div style={{ position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "8px" }}>
+                {slides.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentSlide(idx)}
+                    style={{
+                      width: currentSlide === idx ? "24px" : "8px",
+                      height: "8px",
+                      borderRadius: "4px",
+                      background: currentSlide === idx ? "#38bdf8" : "#64748b",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* WIDGET CHECK INVOICE (JIKA DIATUR DI BAWAH CAROUSEL) */}
+        {settings.widgetPosition === "BELOW_CAROUSEL" && InvoiceSearchWidget}
 
         {/* DAFTAR PRODUK DIGITAL */}
         <section id="products-section">
