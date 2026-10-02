@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 
 const ADMIN_FEE_RATES: Record<string, { percent: number; fixed: number; name: string }> = {
   QRIS: { percent: 0.007, fixed: 0, name: "QRIS (0.7%)" },
@@ -17,7 +18,7 @@ export default function GestunPage() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [amountInput, setAmountInput] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("QRIS");
-  
+
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [accountHolder, setAccountHolder] = useState("");
@@ -26,9 +27,9 @@ export default function GestunPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const rawAmount = parseInt(amountInput.replace(/\D/g, ""), 10) || 0;
-  
+
   const selectedAdminRate = ADMIN_FEE_RATES[paymentMethod] || ADMIN_FEE_RATES["QRIS"];
-  const adminFee = Math.round((rawAmount * selectedAdminRate.percent) + selectedAdminRate.fixed);
+  const adminFee = Math.round(rawAmount * selectedAdminRate.percent + selectedAdminRate.fixed);
   const serviceFee = Math.round(rawAmount * SERVICE_FEE_PERCENT);
   const totalDeduction = adminFee + serviceFee + TRANSFER_FEE;
   const netPayout = Math.max(0, rawAmount - totalDeduction);
@@ -45,7 +46,6 @@ export default function GestunPage() {
     setLoading(true);
 
     try {
-      // Memanggil API Checkout standar STORE Engine
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -71,7 +71,6 @@ export default function GestunPage() {
       const data = await res.json();
 
       if (res.ok && data.paymentUrl) {
-        // Langsung arahkan ke DOKU Payment Gateway (Sama seperti produk digital)
         window.location.href = data.paymentUrl;
       } else {
         setErrorMessage(data.message || "Gagal memproses pembayaran.");
@@ -85,11 +84,19 @@ export default function GestunPage() {
 
   return (
     <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", padding: "40px 16px", fontFamily: "sans-serif" }}>
-      <div style={{ maxWidth: "500px", margin: "0 auto", background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid #334155" }}>
-        <h1 style={{ fontSize: "1.4rem", color: "#38bdf8", textAlign: "center", marginTop: 0 }}>⚡ Form Tarik Tunai / Gestun</h1>
+      <div style={{ maxWidth: "520px", margin: "0 auto", background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid #334155", boxShadow: "0 10px 25px rgba(0,0,0,0.3)" }}>
+        
+        {/* Tombol Kembali ke Home */}
+        <div style={{ marginBottom: "16px" }}>
+          <Link href="/" style={{ color: "#38bdf8", textDecoration: "none", fontSize: "0.85rem", fontWeight: "bold" }}>
+            ← Kembali ke Beranda
+          </Link>
+        </div>
+
+        <h1 style={{ fontSize: "1.4rem", color: "#38bdf8", textAlign: "center", marginTop: 0, marginBottom: "20px" }}>⚡ Form Tarik Tunai / Gestun</h1>
 
         {errorMessage && (
-          <div style={{ background: "rgba(239, 68, 68, 0.2)", border: "1px solid #ef4444", color: "#fca5a5", padding: "10px", borderRadius: "8px", fontSize: "0.85rem", marginBottom: "16px" }}>
+          <div style={{ background: "rgba(239, 68, 68, 0.2)", border: "1px solid #ef4444", color: "#fca5a5", padding: "10px 14px", borderRadius: "8px", fontSize: "0.85rem", marginBottom: "16px" }}>
             ⚠️ {errorMessage}
           </div>
         )}
@@ -131,14 +138,31 @@ export default function GestunPage() {
             <input type="text" required placeholder="Atas Nama Penerima" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }} />
           </div>
 
-          <div style={{ background: "#0f172a", padding: "12px", borderRadius: "8px", fontSize: "0.85rem", marginBottom: "20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", color: "#10b981", fontWeight: "bold" }}>
+          {/* RINCIAN BIAYA LENGKAP */}
+          <div style={{ background: "#0f172a", padding: "14px", borderRadius: "10px", border: "1px solid #334155", fontSize: "0.82rem", marginBottom: "20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#cbd5e1", marginBottom: "6px" }}>
+              <span>Biaya Payment Gateway ({selectedAdminRate.name}):</span>
+              <span>Rp {adminFee.toLocaleString("id-ID")}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#cbd5e1", marginBottom: "6px" }}>
+              <span>Biaya Layanan Gestun (7%):</span>
+              <span>Rp {serviceFee.toLocaleString("id-ID")}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#cbd5e1", marginBottom: "6px" }}>
+              <span>Biaya Transfer Bank:</span>
+              <span>Rp {TRANSFER_FEE.toLocaleString("id-ID")}</span>
+            </div>
+            <div style={{ borderTop: "1px dashed #334155", paddingTop: "8px", marginTop: "8px", display: "flex", justifyContent: "space-between", color: "#f8fafc", fontWeight: "bold" }}>
+              <span>Total Potongan:</span>
+              <span style={{ color: "#ef4444" }}>- Rp {totalDeduction.toLocaleString("id-ID")}</span>
+            </div>
+            <div style={{ borderTop: "1px solid #334155", paddingTop: "10px", marginTop: "8px", display: "flex", justifyContent: "space-between", color: "#10b981", fontSize: "0.95rem", fontWeight: "bold" }}>
               <span>Dana Bersih Diterima:</span>
               <span>Rp {netPayout.toLocaleString("id-ID")}</span>
             </div>
           </div>
 
-          <button type="submit" disabled={loading} style={{ width: "100%", padding: "14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "1rem", cursor: "pointer" }}>
+          <button type="submit" disabled={loading} style={{ width: "100%", padding: "14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "1rem", cursor: loading ? "not-allowed" : "pointer" }}>
             {loading ? "Menghubungkan Gateway..." : `Beli / Bayar Rp ${rawAmount.toLocaleString("id-ID")}`}
           </button>
         </form>
