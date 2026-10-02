@@ -48,6 +48,10 @@ export default function GalleryDrivePage() {
   // Search Query
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Multi-Select / Checklist State
+  const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
+
   // Upload & UI State
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -88,6 +92,9 @@ export default function GalleryDrivePage() {
 
   const loadGalleryData = async (parentId: string, search: string) => {
     setLoading(true);
+    // Reset Checklist saat memuat data baru
+    setSelectedFolderIds([]);
+    setSelectedFileIds([]);
     try {
       const res = await fetch(`/api/gallery?parentId=${parentId}&search=${encodeURIComponent(search)}`);
       const data = await res.json();
@@ -233,7 +240,7 @@ export default function GalleryDrivePage() {
     }
   };
 
-  // Handler Delete
+  // Handler Delete Tunggal
   const handleDelete = async (itemType: "folder" | "file", id: string, name: string) => {
     if (!confirm(`Apakah Anda yakin ingin menghapus ${itemType} '${name}'?`)) return;
 
@@ -244,6 +251,64 @@ export default function GalleryDrivePage() {
       }
     } catch (err: any) {
       alert("Gagal menghapus: " + err.message);
+    }
+  };
+
+  // --- LOGIK A TENTANG CHECKLIST / MULTI SELECT ---
+  const toggleSelectFolder = (id: string) => {
+    setSelectedFolderIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectFile = (id: string) => {
+    setSelectedFileIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const isAllSelected =
+    folders.length + files.length > 0 &&
+    selectedFolderIds.length === folders.length &&
+    selectedFileIds.length === files.length;
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedFolderIds([]);
+      setSelectedFileIds([]);
+    } else {
+      setSelectedFolderIds(folders.map((f) => f.id));
+      setSelectedFileIds(files.map((f) => f.id));
+    }
+  };
+
+  // Handler Hapus Banyak Item Sekaligus
+  const handleDeleteSelected = async () => {
+    const totalCount = selectedFolderIds.length + selectedFileIds.length;
+    if (totalCount === 0) return;
+
+    if (!confirm(`Apakah Anda yakin ingin menghapus ${totalCount} item terpilih?`)) return;
+
+    try {
+      setLoading(true);
+      // Hapus semua folder terpilih
+      const deleteFolderPromises = selectedFolderIds.map((id) =>
+        fetch(`/api/gallery?id=${id}&type=folder`, { method: "DELETE" })
+      );
+
+      // Hapus semua file terpilih
+      const deleteFilePromises = selectedFileIds.map((id) =>
+        fetch(`/api/gallery?id=${id}&type=file`, { method: "DELETE" })
+      );
+
+      await Promise.all([...deleteFolderPromises, ...deleteFilePromises]);
+
+      setSelectedFolderIds([]);
+      setSelectedFileIds([]);
+      loadGalleryData(currentFolder.id, searchQuery);
+    } catch (err: any) {
+      alert("Gagal menghapus beberapa item terpilih: " + err.message);
+      setLoading(false);
     }
   };
 
@@ -274,14 +339,18 @@ export default function GalleryDrivePage() {
     return "📄";
   };
 
+  const totalSelectedCount = selectedFolderIds.length + selectedFileIds.length;
+
   return (
     <div style={{ background: "#0f172a", minHeight: "100vh", color: "#f8fafc", padding: "24px 16px", fontFamily: "sans-serif" }}>
       <style>{`
         * { box-sizing: border-box; }
-        .drive-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; transition: all 0.2s; }
+        .drive-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; transition: all 0.2s; position: relative; }
         .drive-card:hover { border-color: #38bdf8; transform: translateY(-2px); }
+        .drive-card.selected { border-color: #0284c7; background: #1e3a5f; }
         .btn-action { background: #334155; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
         .btn-action:hover { background: #475569; }
+        .checkbox-custom { width: 18px; height: 18px; cursor: pointer; accent-color: #0284c7; }
       `}</style>
 
       {!isAuthenticated ? (
@@ -322,6 +391,15 @@ export default function GalleryDrivePage() {
             </div>
 
             <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              {totalSelectedCount > 0 && (
+                <button
+                  onClick={handleDeleteSelected}
+                  style={{ background: "#ef4444", color: "#fff", border: "none", padding: "10px 16px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", fontSize: "0.85rem" }}
+                >
+                  🗑 Hapus Terpilih ({totalSelectedCount})
+                </button>
+              )}
+
               <button
                 onClick={handleCreateFolder}
                 style={{ background: "#334155", color: "#38bdf8", border: "1px solid #0284c7", padding: "10px 16px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", fontSize: "0.85rem" }}
@@ -360,7 +438,7 @@ export default function GalleryDrivePage() {
             </div>
           )}
 
-          {/* SEARCH & NAVIGASI BREADCRUMB */}
+          {/* SEARCH & NAVIGASI BREADCRUMB & SELECT ALL BAR */}
           <div style={{ background: "#1e293b", padding: "16px", borderRadius: "12px", border: "1px solid #334155", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
             
             {/* Breadcrumb Folder Path */}
@@ -378,14 +456,29 @@ export default function GalleryDrivePage() {
               ))}
             </div>
 
-            {/* Search Box */}
-            <input
-              type="text"
-              placeholder="🔍 Cari berkas atau folder..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", fontSize: "0.85rem", outline: "none", minWidth: "220px" }}
-            />
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              {/* Checkbox Select All */}
+              {(folders.length > 0 || files.length > 0) && (
+                <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.85rem", color: "#cbd5e1" }}>
+                  <input
+                    type="checkbox"
+                    className="checkbox-custom"
+                    checked={isAllSelected}
+                    onChange={handleToggleSelectAll}
+                  />
+                  Pilih Semua
+                </label>
+              )}
+
+              {/* Search Box */}
+              <input
+                type="text"
+                placeholder="🔍 Cari berkas atau folder..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", fontSize: "0.85rem", outline: "none", minWidth: "220px" }}
+              />
+            </div>
           </div>
 
           {loading ? (
@@ -397,24 +490,39 @@ export default function GalleryDrivePage() {
                 <div style={{ marginBottom: "32px" }}>
                   <h2 style={{ fontSize: "1rem", color: "#94a3b8", marginBottom: "12px" }}>FOLDER ({folders.length})</h2>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "16px" }}>
-                    {folders.map((folder) => (
-                      <div key={folder.id} className="drive-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    {folders.map((folder) => {
+                      const isSelected = selectedFolderIds.includes(folder.id);
+                      return (
                         <div
-                          onClick={() => handleOpenFolder(folder)}
-                          style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", flex: 1, overflow: "hidden" }}
+                          key={folder.id}
+                          className={`drive-card ${isSelected ? "selected" : ""}`}
+                          style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
                         >
-                          <span style={{ fontSize: "1.5rem" }}>📁</span>
-                          <span style={{ fontWeight: "bold", fontSize: "0.9rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#f8fafc" }}>
-                            {folder.name}
-                          </span>
-                        </div>
+                          <input
+                            type="checkbox"
+                            className="checkbox-custom"
+                            checked={isSelected}
+                            onChange={() => toggleSelectFolder(folder.id)}
+                            style={{ marginRight: "10px" }}
+                          />
 
-                        <div style={{ display: "flex", gap: "4px" }}>
-                          <button onClick={() => handleRename("folder", folder.id, folder.name)} className="btn-action" title="Rename">✏️</button>
-                          <button onClick={() => handleDelete("folder", folder.id, folder.name)} className="btn-action" style={{ color: "#ef4444" }} title="Delete">🗑</button>
+                          <div
+                            onClick={() => handleOpenFolder(folder)}
+                            style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", flex: 1, overflow: "hidden" }}
+                          >
+                            <span style={{ fontSize: "1.5rem" }}>📁</span>
+                            <span style={{ fontWeight: "bold", fontSize: "0.9rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#f8fafc" }}>
+                              {folder.name}
+                            </span>
+                          </div>
+
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            <button onClick={() => handleRename("folder", folder.id, folder.name)} className="btn-action" title="Rename">✏️</button>
+                            <button onClick={() => handleDelete("folder", folder.id, folder.name)} className="btn-action" style={{ color: "#ef4444" }} title="Delete">🗑</button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -428,51 +536,67 @@ export default function GalleryDrivePage() {
                   </div>
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "16px" }}>
-                    {files.map((file) => (
-                      <div key={file.id} className="drive-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                        <div>
-                          {/* Preview Gambar (Jika Tipe File Image) */}
-                          {file.type.startsWith("image/") ? (
-                            <div style={{ width: "100%", height: "120px", borderRadius: "8px", overflow: "hidden", marginBottom: "12px", background: "#0f172a", border: "1px solid #334155" }}>
-                              <img src={file.publicUrl} alt={file.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    {files.map((file) => {
+                      const isSelected = selectedFileIds.includes(file.id);
+                      return (
+                        <div
+                          key={file.id}
+                          className={`drive-card ${isSelected ? "selected" : ""}`}
+                          style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}
+                        >
+                          <div>
+                            {/* Checkbox Checklist Posisi Atas Kanan */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                              <span style={{ fontSize: "1.2rem" }}>{getFileIcon(file.type)}</span>
+                              <input
+                                type="checkbox"
+                                className="checkbox-custom"
+                                checked={isSelected}
+                                onChange={() => toggleSelectFile(file.id)}
+                              />
                             </div>
-                          ) : (
-                            <div style={{ fontSize: "2rem", marginBottom: "8px" }}>{getFileIcon(file.type)}</div>
-                          )}
 
-                          <div style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#f8fafc", wordBreak: "break-all", marginBottom: "4px" }}>
-                            {file.name}
+                            {/* Preview Gambar (Jika Tipe File Image) */}
+                            {file.type.startsWith("image/") && (
+                              <div style={{ width: "100%", height: "120px", borderRadius: "8px", overflow: "hidden", marginBottom: "12px", background: "#0f172a", border: "1px solid #334155" }}>
+                                <img src={file.publicUrl} alt={file.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              </div>
+                            )}
+
+                            <div style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#f8fafc", wordBreak: "break-all", marginBottom: "4px" }}>
+                              {file.name}
+                            </div>
+                            <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "12px" }}>
+                              {formatBytes(file.size)}
+                            </div>
                           </div>
-                          <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "12px" }}>
-                            {formatBytes(file.size)}
+
+                          {/* Tombol Aksi File */}
+                          <div style={{ borderTop: "1px solid #334155", paddingTop: "10px", display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "space-between" }}>
+                            <button
+                              onClick={() => handleCopyLink(file)}
+                              style={{
+                                background: copiedId === file.id ? "#10b981" : "#0284c7",
+                                color: "#fff",
+                                border: "none",
+                                padding: "6px 10px",
+                                borderRadius: "6px",
+                                fontSize: "0.75rem",
+                                fontWeight: "bold",
+                                cursor: "pointer"
+                              }}
+                            >
+                              {copiedId === file.id ? "✓ Link Copied!" : "🔗 Copy Link"}
+                            </button>
+                            
+                            <div style={{ display: "flex", gap: "4px" }}>
+                              <button onClick={() => handleRename("file", file.id, file.name)} className="btn-action" title="Rename">✏️</button>
+                              <button onClick={() => handleDelete("file", file.id, file.name)} className="btn-action" style={{ color: "#ef4444" }} title="Delete">🗑</button>
+                            </div>
                           </div>
                         </div>
-
-                        {/* Tombol Aksi File */}
-                        <div style={{ borderTop: "1px solid #334155", paddingTop: "10px", display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "space-between" }}>
-                          <button
-                            onClick={() => handleCopyLink(file)}
-                            style={{
-                              background: copiedId === file.id ? "#10b981" : "#0284c7",
-                              color: "#fff",
-                              border: "none",
-                              padding: "6px 10px",
-                              borderRadius: "6px",
-                              fontSize: "0.75rem",
-                              fontWeight: "bold",
-                              cursor: "pointer"
-                            }}
-                          >
-                            {copiedId === file.id ? "✓ Link Copied!" : "🔗 Copy Link"}
-                          </button>
-                          
-                          <div style={{ display: "flex", gap: "4px" }}>
-                            <button onClick={() => handleRename("file", file.id, file.name)} className="btn-action" title="Rename">✏️</button>
-                            <button onClick={() => handleDelete("file", file.id, file.name)} className="btn-action" style={{ color: "#ef4444" }} title="Delete">🗑</button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
