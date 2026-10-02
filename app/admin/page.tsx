@@ -29,6 +29,18 @@ export default function AdminDashboardPage() {
   const [generatorApiUrl, setGeneratorApiUrl] = useState("");
   const [appUrl, setAppUrl] = useState("");
 
+  // Fitur Baru: Foto Produk & Carousel
+  const [imageUrl, setImageUrl] = useState("");
+  const [showInCarousel, setShowInCarousel] = useState(true);
+
+  // Fitur Baru: Pengaturan Tampilan Toko (Layout Settings)
+  const [headerTitle, setHeaderTitle] = useState("STORE Engine");
+  const [headerIcon, setHeaderIcon] = useState("🛒");
+  const [gridColumns, setGridColumns] = useState(4);
+  const [widgetPosition, setWidgetPosition] = useState("BELOW_CAROUSEL");
+  const [footerText, setFooterText] = useState("© PT Buana Media Bersama. All rights reserved.");
+  const [savingSettings, setSavingSettings] = useState(false);
+
   // Modus Input File: "UPLOAD" (Direct GAS) atau "MANUAL_ID" (File Telegram Besar)
   const [uploadMode, setUploadMode] = useState<"UPLOAD" | "MANUAL_ID">("UPLOAD");
   const [file, setFile] = useState<File | null>(null);
@@ -39,14 +51,15 @@ export default function AdminDashboardPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-  const savedPwd = sessionStorage.getItem("admin_session_pwd");
+    const savedPwd = sessionStorage.getItem("admin_session_pwd");
 
-  if (savedPwd) {
-    setAdminPassword(savedPwd);
-    setIsAuthenticated(true);
-    loadProducts(savedPwd);
-  }
-}, []);
+    if (savedPwd) {
+      setAdminPassword(savedPwd);
+      setIsAuthenticated(true);
+      loadProducts(savedPwd);
+      loadSettings(savedPwd);
+    }
+  }, []);
 
   const loadProducts = async (pwd: string) => {
     setFetchingProducts(true);
@@ -56,15 +69,15 @@ export default function AdminDashboardPage() {
 
       if (res.ok && data.success) {
         setProducts(data.products || []);
-     } else {
-  alert(data.message || "Password Salah!");
+      } else {
+        alert(data.message || "Password Salah!");
 
-  sessionStorage.removeItem(
-    "admin_session_pwd"
-  );
+        sessionStorage.removeItem(
+          "admin_session_pwd"
+        );
 
-  setIsAuthenticated(false);
-}
+        setIsAuthenticated(false);
+      }
     } catch (e: any) {
       alert("Error memuat produk: " + e.message);
     } finally {
@@ -72,19 +85,67 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const loadSettings = async (pwd: string) => {
+    try {
+      const res = await fetch(`/api/admin/settings?password=${encodeURIComponent(pwd)}`);
+      const data = await res.json();
+      if (res.ok && data.settings) {
+        setHeaderTitle(data.settings.headerTitle || "STORE Engine");
+        setHeaderIcon(data.settings.headerIcon || "🛒");
+        setGridColumns(data.settings.gridColumns || 4);
+        setWidgetPosition(data.settings.widgetPosition || "BELOW_CAROUSEL");
+        setFooterText(data.settings.footerText || "© PT Buana Media Bersama. All rights reserved.");
+      }
+    } catch (e: any) {
+      console.warn("Gagal memuat pengaturan tampilan:", e.message);
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSettings(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          adminPassword,
+          headerTitle,
+          headerIcon,
+          gridColumns: Number(gridColumns),
+          widgetPosition,
+          footerText,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        alert("Pengaturan tampilan toko berhasil disimpan!");
+      } else {
+        alert("Gagal menyimpan pengaturan: " + data.message);
+      }
+    } catch (err: any) {
+      alert("Error menyimpan pengaturan: " + err.message);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
   const handleLogin = (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (adminPassword.trim().length > 0) {
-    sessionStorage.setItem(
-      "admin_session_pwd",
-      adminPassword
-    );
+    if (adminPassword.trim().length > 0) {
+      sessionStorage.setItem(
+        "admin_session_pwd",
+        adminPassword
+      );
 
-    setIsAuthenticated(true);
-    loadProducts(adminPassword);
-  }
-};
+      setIsAuthenticated(true);
+      loadProducts(adminPassword);
+      loadSettings(adminPassword);
+    }
+  };
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -109,6 +170,8 @@ export default function AdminDashboardPage() {
     setHasLicense(true);
     setLicenseMode("AUTO");
     setAppUrl("");
+    setImageUrl("");
+    setShowInCarousel(true);
     setManualKeys("");
     setGeneratorApiUrl("");
     setUploadMode("UPLOAD");
@@ -195,6 +258,8 @@ export default function AdminDashboardPage() {
     setManualKeys(product.manualKeys || "");
     setGeneratorApiUrl(product.generatorApiUrl || "");
     setAppUrl(product.appUrl || "");
+    setImageUrl(product.imageUrl || "");
+    setShowInCarousel(product.showInCarousel !== false);
 
     if (product.telegramFileId) {
       setUploadMode("MANUAL_ID");
@@ -285,6 +350,8 @@ export default function AdminDashboardPage() {
           manualKeys,
           generatorApiUrl,
           appUrl,
+          imageUrl,
+          showInCarousel,
           telegramFileId: finalTelegramFileId,
         }),
       });
@@ -381,26 +448,91 @@ export default function AdminDashboardPage() {
               >
                 📦 Produk & Transaksi
               </Link>
-              <Link
-                href="/admin/guide"
-                style={{ background: "#0284c7", color: "#fff", padding: "8px 12px", borderRadius: "6px", fontSize: "0.85rem", fontWeight: "bold" }}
-              >
-                📖 Panduan
-              </Link>
               <button
-  onClick={() => {
-    sessionStorage.removeItem(
-      "admin_session_pwd"
-    );
-    setIsAuthenticated(false);
-    setAdminPassword("");
-  }} style={{ background: "#ef4444", border: "none", color: "#fff", padding: "8px 12px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "0.85rem" }}>
+                onClick={() => {
+                  sessionStorage.removeItem(
+                    "admin_session_pwd"
+                  );
+                  setIsAuthenticated(false);
+                  setAdminPassword("");
+                }}
+                style={{ background: "#ef4444", border: "none", color: "#fff", padding: "8px 12px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "0.85rem" }}
+              >
                 Logout
               </button>
             </div>
           </div>
 
-          {/* FORM TAMBAH / UPDATE PRODUK (DIATAS) */}
+          {/* FORM PENGATURAN TAMPILAN HALAMAN UTAMA */}
+          <div className="dash-card" style={{ background: "#1e293b", padding: "24px", borderRadius: "16px", border: "1px solid #0284c7", marginBottom: "32px" }}>
+            <h2 style={{ fontSize: "1.1rem", color: "#38bdf8", marginTop: 0, marginBottom: "16px" }}>⚙️ Pengaturan Layout & Tampilan Halaman Utama</h2>
+            <form onSubmit={handleSaveSettings} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Icon Header</label>
+                <input
+                  type="text"
+                  value={headerIcon}
+                  onChange={(e) => setHeaderIcon(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Judul Header</label>
+                <input
+                  type="text"
+                  value={headerTitle}
+                  onChange={(e) => setHeaderTitle(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Jumlah Kolom Grid Produk (1 - 5)</label>
+                <select
+                  value={gridColumns}
+                  onChange={(e) => setGridColumns(Number(e.target.value))}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
+                >
+                  <option value={1}>1 Kolom</option>
+                  <option value={2}>2 Kolom</option>
+                  <option value={3}>3 Kolom</option>
+                  <option value={4}>4 Kolom</option>
+                  <option value={5}>5 Kolom</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Posisi Widget Promosi Gestun</label>
+                <select
+                  value={widgetPosition}
+                  onChange={(e) => setWidgetPosition(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
+                >
+                  <option value="BELOW_CAROUSEL">Di Bawah Carousel</option>
+                  <option value="ABOVE_CAROUSEL">Di Atas Carousel</option>
+                  <option value="HIDDEN">Sembunyikan Widget</option>
+                </select>
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>Teks Isi Footer</label>
+                <input
+                  type="text"
+                  value={footerText}
+                  onChange={(e) => setFooterText(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#0f172a", color: "#fff" }}
+                />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <button
+                  type="submit"
+                  disabled={savingSettings}
+                  style={{ padding: "10px 20px", background: "#0284c7", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}
+                >
+                  {savingSettings ? "Menyimpan Pengaturan..." : "Simpan Pengaturan Tampilan"}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* FORM TAMBAH / UPDATE PRODUK */}
           <div className="dash-card" style={{ background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid #334155", marginBottom: "32px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#f8fafc" }}>
@@ -476,6 +608,30 @@ export default function AdminDashboardPage() {
                   onChange={(e) => setPrice(e.target.value)}
                   style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#0f172a", color: "#fff", boxSizing: "border-box" }}
                 />
+              </div>
+
+              {/* FOTO PRODUK & CAROUSEL TOGGLE */}
+              <div style={{ background: "#0f172a", padding: "16px", borderRadius: "10px", border: "1px solid #334155", marginBottom: "16px" }}>
+                <h3 style={{ fontSize: "0.85rem", color: "#38bdf8", marginTop: 0, marginBottom: "10px" }}>🖼️ Foto Aplikasi & Banner Carousel</h3>
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#94a3b8", marginBottom: "4px" }}>URL Foto Produk / Logo Aplikasi</label>
+                  <input
+                    type="url"
+                    placeholder="https://domain.com/foto-produk.png"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box" }}
+                  />
+                </div>
+                <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#e2e8f0", fontSize: "0.85rem" }}>
+                  <input
+                    type="checkbox"
+                    checked={showInCarousel}
+                    onChange={(e) => setShowInCarousel(e.target.checked)}
+                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                  />
+                  Tampilkan produk ini di Banner Carousel Halaman Utama?
+                </label>
               </div>
 
               <div style={{ marginBottom: "16px" }}>
@@ -606,14 +762,6 @@ export default function AdminDashboardPage() {
                         onChange={(e) => setManualTelegramFileId(e.target.value)}
                         style={{ width: "100%", padding: "10px 12px", borderRadius: "6px", border: "1px solid #475569", background: "#1e293b", color: "#fff", boxSizing: "border-box", fontFamily: "monospace" }}
                       />
-                      <div style={{ background: "#1e293b", border: "1px solid #334155", padding: "10px 12px", borderRadius: "6px", marginTop: "8px", fontSize: "0.75rem", color: "#94a3b8" }}>
-                        <strong style={{ color: "#38bdf8" }}>Cara Ambil Telegram File ID (File Besar):</strong>
-                        <ol style={{ margin: "4px 0 0 0", paddingLeft: "16px", lineHeight: "1.5" }}>
-                          <li>Kirim file aplikasi berukuran besar ke Grup Telegram Anda.</li>
-                          <li>Forward (Teruskan) file tersebut ke bot pembantu: <code style={{ color: "#f1f5f9" }}>@ShowJsonBot</code> atau <code style={{ color: "#f1f5f9" }}>@FileIdBot</code>.</li>
-                          <li>Salin kode string <code style={{ color: "#f1f5f9" }}>"file_id"</code> yang diberikan, lalu tempelkan pada kolom di atas.</li>
-                        </ol>
-                      </div>
                     </div>
                   )}
                 </div>
@@ -641,7 +789,7 @@ export default function AdminDashboardPage() {
             </form>
           </div>
 
-          {/* TABEL DAFTAR PRODUK (DIBAWAH) */}
+          {/* TABEL DAFTAR PRODUK */}
           <div className="dash-card" style={{ background: "#1e293b", padding: "24px", borderRadius: "16px", border: "1px solid #334155" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#f8fafc" }}>Daftar Produk di Database ({products.length})</h2>
@@ -660,7 +808,7 @@ export default function AdminDashboardPage() {
                       <th style={{ padding: "12px 10px" }}>ID Produk</th>
                       <th style={{ padding: "12px 10px" }}>Nama Produk</th>
                       <th style={{ padding: "12px 10px" }}>Harga</th>
-                      <th style={{ padding: "12px 10px" }}>Tipe</th>
+                      <th style={{ padding: "12px 10px" }}>Carousel</th>
                       <th style={{ padding: "12px 10px" }}>Lisensi Mode</th>
                       <th style={{ padding: "12px 10px", textAlign: "right" }}>Aksi</th>
                     </tr>
@@ -672,9 +820,7 @@ export default function AdminDashboardPage() {
                         <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>{p.name}</td>
                         <td style={{ padding: "12px 10px", color: "#10b981", fontWeight: "bold", verticalAlign: "middle" }}>Rp {Number(p.price || 0).toLocaleString("id-ID")}</td>
                         <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
-                          <span style={{ padding: "4px 8px", borderRadius: "4px", background: p.type === "ACCESS" ? "#065f46" : "#1e40af", color: "#fff", fontSize: "0.75rem", fontWeight: "600", display: "inline-block" }}>
-                            {p.type || "DOWNLOAD"}
-                          </span>
+                          {p.showInCarousel !== false ? "✅ Tampil" : "❌ Sembunyi"}
                         </td>
                         <td style={{ padding: "12px 10px", color: "#cbd5e1", verticalAlign: "middle" }}>
                           {p.hasLicense === false ? "Tanpa Lisensi" : p.licenseMode || "AUTO"}
